@@ -1,4 +1,4 @@
-es_translator
+es_utilities
 =============
 
 For the elasticsearch

@@ -14,8 +14,12 @@ count = 1
 def test(hits, facets, conditions):
     global count
     print '#%s' % count
-    pprint(translate(hits, facets, conditions))
+    data = translate(hits, facets, conditions)
+    pprint(data)
+    import connection.esjson as J
+    print J.dumps(data)
     count += 1
+    return data
 
 # some predefined global variable
 now = tt.get_now()

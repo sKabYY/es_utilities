@@ -68,12 +68,20 @@ def is_tagged_list(exp, tag):
     return isinstance(exp, list) and is_token_value(exp[0], tag)
 
 
+class Void(object):
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return '#void'
+
+
 def void():
-    return None
+    return Void()
 
 
 def isvoid(v):
-    return v is None
+    return isinstance(v, Void)
 
 
 def nil():

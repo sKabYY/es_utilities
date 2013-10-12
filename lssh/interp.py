@@ -1,16 +1,23 @@
 #!/usr/bin/env python
 
-from lslib import build_ast, setup_environment, eval_seq
+from lslib import InterpError, isvoid, build_ast, eval_seq, setup_environment
 
 
-text = '''
-(define (gcd a b)
-  (if (= a 0)
-      b
-      (gcd (% b a) a)))
-(gcd 144 12144)
-'''
+def driver_loop():
+    global_env = setup_environment()
+    while True:
+        try:
+            text = raw_input('> ')
+        except EOFError:
+            break
+        try:
+            result = eval_seq(build_ast(text), global_env)
+            if not isvoid(result):
+                print result
+        except InterpError as e:
+            print '<Error> %s' % str(e)
+    print '\nBye~'
 
-env = setup_environment()
-output = eval_seq(build_ast(text), env)
-print output
+
+if __name__ == '__main__':
+    driver_loop()

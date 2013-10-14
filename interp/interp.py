@@ -7,15 +7,18 @@ def driver_loop():
     global_env = setup_environment()
     while True:
         try:
-            text = raw_input('> ')
-        except EOFError:
-            break
-        try:
-            result = eval_seq(build_ast(text), global_env)
-            if not isvoid(result):
-                print result
-        except InterpError as e:
-            print '<Error> %s' % str(e)
+            try:
+                text = raw_input('> ')
+            except EOFError:
+                break
+            try:
+                result = eval_seq(build_ast(text), global_env)
+                if not isvoid(result):
+                    print result
+            except InterpError as e:
+                print '[Error] %s' % str(e)
+        except KeyboardInterrupt:
+            print
     print '\nBye~'
 
 

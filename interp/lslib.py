@@ -1,20 +1,20 @@
 ##
 
-from simpletable import SimpleTable
+from simpletable import SimpleTable, enum
 table = SimpleTable  # rename SimpleTable
 from scanner import Token
 from scanner import LPAREN, RPAREN, VARIABLE, NUMBER
 
 
 #keywords
-KW = table([
+KW = enum(
     'define',
     'if',
     'cond',
     'lambda',
     'and',
     'or',
-], lambda s: s.upper())
+    key_mapper=lambda s: s.upper())
 
 
 class InterpError(Exception):

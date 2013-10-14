@@ -17,3 +17,11 @@ class SimpleTable(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+
+
+def enum(*seq, **params):
+    try:
+        key_mapper = params['key_mapper']
+    except KeyError:
+        key_mapper = lambda x: x
+    return SimpleTable(seq, key_mapper)

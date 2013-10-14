@@ -19,7 +19,11 @@ origin_data = es.search(index=INDEX, doc_type=DOC_TYPE2, body=post_data)
 
 formatted_data = _format(origin_data)
 sources = hits_sources(formatted_data)
+print 'sources:'
 pprint(sources)
 
+print
+
 diff = map(lambda l: difference(l, 'total'), groupby(sources, 'name'))
+print 'diff'
 pprint(diff)

@@ -13,5 +13,10 @@ body = translate(
     [Equal('title', 'Test2')])
 
 from pprint import pprint
+origin_data = es.search(index=INDEX, body=body)
+pprint(origin_data)
 
-pprint(es.search(index=INDEX, body=body))
+print
+print 'format:'
+from translator.post_process import _format, hits_sources
+pprint(hits_sources(_format(origin_data)))

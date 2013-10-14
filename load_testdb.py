@@ -10,46 +10,30 @@ import elasticsearch as ES
 
 INDEX = 'testdb'
 DOC_TYPE = 'testtest'
+DOC_TYPE2 = 'testdiff'
 
 
-def main():
+def testtest():
     ts_field = 'datetime'
-    head = ('title', 'content')
+    head = ('title', 'content', 'num')
     num_cols = len(head)
     data = [
-        ('Test', 'Hehe'),
-        ('T2', 'Lala'),
-        ('Tst2', 'Xaxa'),
-        ('Tes2', 'Kaka'),
-        ('Test9', 'Kala'),
-        ('Test2', 'Lala'),
-        ('Test2', 'Lala'),
-        ('Test12', 'Lala'),
-        ('Test22', 'Lala'),
-        ('Test32', 'Lala'),
+        ('Test', 'Hehe', 1),
+        ('T2', 'Lala', 2),
+        ('Tst2', 'Xaxa', 3),
+        ('Tes2', 'Kaka', 4),
+        ('Test9', 'Kala', 5),
+        ('Test2', 'Lala', 6),
+        ('Test2', 'Lala', 7),
+        ('Test12', 'Lala', 8),
+        ('Test22', 'Lala', 8),
+        ('Test32', 'Lala', 7),
     ]
 
     now = tt.get_now()
 
     # connect to localhost:9200
     es = ES.Elasticsearch()
-
-    # put template
-    #es.indices.put_template(name='testdb', body={
-    #    'template': INDEX,
-    #    'settings': {
-    #        'index.analysis.analyzer.default.type': 'simple'},
-    #    'mappings': {
-    #        '_all': {'enabled': False},
-    #        '_source': {'compress': True},
-    #        DOC_TYPE: {
-    #            'dynamic_templates': [{
-    #                'title_template': {
-    #                    'path_match': 'title',
-    #                    'match_mapping_type': 'string',
-    #                    'mapping': {
-    #                        'type': 'string',
-    #                        'index': 'not_analyzed'}}}]}}})
 
     # put mapping
     es.indices.put_mapping(index=INDEX, doc_type=DOC_TYPE, body={
@@ -66,16 +50,35 @@ def main():
         for j in xrange(num_cols):
             body[head[j]] = data[i][j]
 
-        es.index(
+        es.create(
             index=INDEX,
             doc_type=DOC_TYPE,
             id=i + 1,
             body=body
         )
 
-    from pprint import pprint
-    # show all
-    pprint(es.search())
+
+def testdiff():
+    es = ES.Elasticsearch()
+    T = 3
+    N = 10
+    for i in xrange(T):
+        for j in xrange(N):
+            idx = i + 1
+            body = {
+                'name': '#%d' % idx,
+                'total': j * idx,
+                'timestamp': tt.get_now()
+            }
+            es.create(
+                index=INDEX,
+                doc_type=DOC_TYPE2,
+                id=i * N + j + 1,
+                body=body
+            )
+
 
 if __name__ == '__main__':
-    main()
+    testtest()
+    testdiff()
+    print 'ok'

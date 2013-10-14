@@ -1,10 +1,13 @@
-class table(dict):
+#
+
+
+class Table(dict):
 
     def __init__(self, data=None):
 
         def construct(v):
             if isinstance(v, dict):
-                return table(v)
+                return Table(v)
             elif isinstance(v, (list, tuple, set)):
                 return type(v)(map(lambda e: construct(e), v))
             else:
@@ -25,3 +28,23 @@ class table(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+
+
+class Slots(object):
+    def __init__(self):
+        self.container = {}
+
+    def put(self, key, value):
+        try:
+            self.container[key].append(value)
+        except KeyError:
+            self.container[key] = []
+
+    def get(self, key):
+        try:
+            return self.container[key]
+        except KeyError:
+            return []
+
+    def __iter__(self):
+        return iter(self.container)

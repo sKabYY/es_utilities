@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from load_testdb import INDEX, DOC_TYPE
+from load_testdb import INDEX, DOC_TYPE, DOC_TYPE2
 
 import elasticsearch as ES
 
@@ -10,3 +10,4 @@ es = ES.Elasticsearch()
 # delete all
 print es.delete_by_query(index=INDEX, body={'query_string': {'query': '*'}})
 print es.indices.delete_mapping(index=INDEX, doc_type=DOC_TYPE)
+print es.indices.delete_mapping(index=INDEX, doc_type=DOC_TYPE2)

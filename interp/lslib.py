@@ -1,7 +1,7 @@
 ##
 
-from simpletable import simpletable
-table = simpletable  # rename simpletable
+from simpletable import SimpleTable
+table = SimpleTable  # rename SimpleTable
 from scanner import Token
 from scanner import LPAREN, RPAREN, VARIABLE, NUMBER
 

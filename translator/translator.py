@@ -193,8 +193,8 @@ class Terms(Facet):
 
     def to_dict(self):
         '''
-        Return an ES facet table.
-        If self.condition is None then return table:
+        Return an ES facet dictionary.
+        If self.condition is None then return dictionary:
         {
             "terms": {
                 "field": self.field,
@@ -202,7 +202,7 @@ class Terms(Facet):
                 "order": "count",
             }
         }
-        else return table:
+        else return dictionary:
         {
             "terms": {
                 "field": self.field,
@@ -231,15 +231,15 @@ class Histogram(Facet):
 
     def to_dict(self):
         '''
-        Return an ES facet table.
-        If self.condition is None then return table:
+        Return an ES facet dictionary.
+        If self.condition is None then return dictionary:
         {
             "date_histogram": {
                 "key_field": timestamp_field,
                 "interval": interval,
             }
         }
-        else return table:
+        else return dictionary:
         {
             "date_histogram": {
                 "key_field": timestamp_field,

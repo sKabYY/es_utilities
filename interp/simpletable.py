@@ -1,4 +1,4 @@
-class simpletable(dict):
+class SimpleTable(dict):
 
     def __init__(self, data=None, key_mapper=None):
         if isinstance(data, dict):

@@ -26,14 +26,29 @@ def facet_entries(name, formatted_data):
     return formatted_data.facets[name].entries
 
 
+def groupby_func(data, func):
+    '''
+    <data> is a list of Table
+    <func> is a function which maps a Table to a value
+    '''
+    slots = Slots()
+    for e in data:
+        slots.put(func(e), e)
+    return map(slots.get, sorted(slots))
+
+
 def groupby(data, field):
     '''
     <data> is a list of Table or dictionary which has key <field>.
     '''
-    slots = Slots()
-    for e in data:
-        slots.put(e[field], e)
-    return map(slots.get, sorted(slots))
+    return groupby_func(data, lambda e: e[field])
+
+
+def number(s):
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
 
 
 def difference(data, field, use_the_latter=False):
@@ -42,7 +57,7 @@ def difference(data, field, use_the_latter=False):
     which has key <field> and the value for key <field> is a number.
     '''
     def __diff(prev, curr):
-        n_d = curr[field] - prev[field]
+        n_d = number(curr[field]) - number(prev[field])
         if use_the_latter:
             d = dict(curr)
         else:

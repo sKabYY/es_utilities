@@ -38,13 +38,14 @@ class Slots(object):
         try:
             self.container[key].append(value)
         except KeyError:
-            self.container[key] = []
+            self.container[key] = [value]
 
     def get(self, key):
         try:
             return self.container[key]
         except KeyError:
-            return []
+            # return []
+            raise KeyError
 
     def __iter__(self):
         return iter(self.container)

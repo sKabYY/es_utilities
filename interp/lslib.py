@@ -6,6 +6,32 @@ from scanner import Token
 from scanner import LPAREN, RPAREN, VARIABLE, NUMBER
 
 
+def build_ast(text):
+    from scanner import scanner
+    tokens = scanner(text)
+    num_tokens = len(tokens)
+    token_tree = []
+
+    def parse_start(start):
+        node = []
+        i = start
+        while i < num_tokens:
+            t = tokens[i]
+            if t.type == LPAREN:
+                child, i = parse_start(i + 1)
+                node.append(child)
+            elif t.type == RPAREN:
+                return node, i + 1
+            else:
+                node.append(t)
+                i += 1
+        return node, num_tokens
+
+    token_tree, end = parse_start(0)
+    assert end == num_tokens
+    return token_tree
+
+
 #keywords
 KW = enum(
     'define',
@@ -109,7 +135,7 @@ def isfalse(b):
 
 
 def istrue(b):
-    return not istrue(b)
+    return not isfalse(b)
 
 
 # struct of procedure:
@@ -119,17 +145,17 @@ def istrue(b):
 #     body: is a list of tokens,
 #     env
 #   )
-def make_procedure(arguments, body, env):
-    check_error(isinstance(arguments, list))
+def make_procedure(arg_tokens, body):
     check_error(
-        reduce(
+        type(arg_tokens) == list and reduce(
             lambda x, y: x and y,
-            map(is_variable, arguments)))
-    args = map(lambda t: t.value, arguments)
-    return table({
+            map(is_variable, arg_tokens)))
+    args = map(lambda a: a.value, arg_tokens)
+    proc = analyze(body)
+    return lambda env: table({
         'type': 'procedure',
         'args': args,
-        'body': body,
+        'body': proc,
         'env': env,
     })
 
@@ -169,41 +195,45 @@ def is_definition(exp):
 
 
 # Two types of define:
-#   1, (define a 1.0) or (define f (lambda (x) x))
-#   2, (define (f x) x)
-def eval_define(exp, env):
+#   1, (define (f x) x)
+#   2, (define a 1.0) or (define f (lambda (x) x))
+def analyze_define(exp):
     check_error(len(exp) == 3)
     if type(exp[1]) == list:
         subexp = exp[1]
-        check_error(subexp[0].type == VARIABLE)
+        check_error(len(subexp) > 0 and is_variable(subexp[0]))
         arguments = subexp[1:]
-        v = make_procedure(arguments, exp[2], env)
-        env.put(subexp[0].value, v)
+        proc = make_procedure(arguments, exp[2])
+        return lambda env: env.put(subexp[0].value, proc(env))
     else:
-        check_error(exp[1].type == VARIABLE)
-        v = _eval(exp[2], env)
-        env.put(exp[1].value, v)
-    return void()
+        check_error(is_variable(exp[1]))
+        proc = analyze(exp[2])
+        return lambda env: env.put(exp[1].value, proc(env))
 
 
 def is_if(exp):
     return is_tagged_list(exp, KW.IF)
 
 
-def eval_if(exp, env):
+def analyze_if(exp):
     check_error(len(exp) == 4)
-    condition = _eval(exp[1], env)
-    if istrue(condition):
-        return _eval(exp[2], env)
-    else:
-        return _eval(exp[3], env)
+    predicate = analyze(exp[1])
+    consequent = analyze(exp[2])
+    alternative = analyze(exp[3])
+
+    def proc(env):
+        if istrue(predicate(env)):
+            return consequent(env)
+        else:
+            return alternative(env)
+    return proc
 
 
 def is_cond(exp):
     return is_tagged_list(exp, KW.COND)
 
 
-def eval_cond(exp, env):
+def analyze_cond(exp):
     check_error(False)  # TODO
 
 
@@ -211,23 +241,21 @@ def is_lambda(exp):
     return is_tagged_list(exp, KW.LAMBDA)
 
 
-def eval_lambda(exp, env):
+def analyze_lambda(exp):
     check_error(len(exp) == 3)
-    return make_procedure(exp[1], exp[2], env)
+    return make_procedure(exp[1], exp[2])
 
 
 def is_application(exp):
     return isinstance(exp, list)
 
 
-def eval_application(exp, env):
-    proc = _eval(exp[0], env)
-    check_error(
-        isprocedure(proc),
-        'Not a procedure: %s' % proc
-    )
-    args = map(lambda a: _eval(a, env), exp[1:])
-    return _apply(proc, args)
+def analyze_application(exp):
+    proc = analyze(exp[0])
+    args = map(analyze, exp[1:])
+    return lambda env: _apply(
+        proc(env),
+        map(lambda f: f(env), args))
 
 
 def apply_primitive(proc, args):
@@ -239,56 +267,29 @@ def apply_compound(proc, args):
     ext_env = proc.env.extend(
         proc.args,
         args)
-    return _eval(proc.body, ext_env)
+    return proc.body(ext_env)
 
 
-def build_ast(text):
-    from scanner import scanner
-    tokens = scanner(text)
-    num_tokens = len(tokens)
-    tree = []
-
-    def parse_start(start):
-        node = []
-        i = start
-        while i < num_tokens:
-            t = tokens[i]
-            if t.type == LPAREN:
-                child, i = parse_start(i + 1)
-                node.append(child)
-            elif t.type == RPAREN:
-                return node, i + 1
-            else:
-                node.append(t)
-                i += 1
-        return node, num_tokens
-
-    token_tree, end = parse_start(0)
-    assert end == num_tokens
-    ast_tree = analyze(token_tree)
-    return ast_tree
-
-
-def analyze(exp, env):
+def analyze(exp):
     if is_self_evaluating(exp):
-        return exp.value
+        return lambda env: exp.value
     elif is_variable(exp):
-        return mk_env_lookup(exp.value, env)
+        return lambda env: env.lookup(exp.value)
     elif is_definition(exp):
-        return analyze_define(exp, env)
+        return analyze_define(exp)
     elif is_if(exp):
-        return analyze_if(exp, env)
+        return analyze_if(exp)
     elif is_cond(exp):
-        return analyze_cond(exp, env)
+        return analyze_cond(exp)
     elif is_lambda(exp):
-        return analyze_lambda(exp, env)
+        return analyze_lambda(exp)
     elif is_application(exp):
-        return analyze_application(exp, env)
+        return analyze_application(exp)
     else:
         raise_error('unknown exp type -- ANALYZE: %s' % exp)
 
 
-def eval_seq(exps, env):
+def eval_seq(exps, env):  # TODO
     res = void()
     for exp in exps:
         res = _eval(exp, env)
@@ -296,22 +297,7 @@ def eval_seq(exps, env):
 
 
 def _eval(exp, env):
-    if is_self_evaluating(exp):
-        return exp.value
-    elif is_variable(exp):
-        return env.lookup(exp.value)
-    elif is_definition(exp):
-        return eval_define(exp, env)
-    elif is_if(exp):
-        return eval_if(exp, env)
-    elif is_cond(exp):
-        return eval_cond(exp, env)
-    elif is_lambda(exp):
-        return eval_lambda(exp, env)
-    elif is_application(exp):
-        return eval_application(exp, env)
-    else:
-        raise_error('unknown exp type -- EVAL: %s' % exp)
+    return analyze(exp)(env)
 
 
 def _apply(proc, args):
@@ -320,7 +306,7 @@ def _apply(proc, args):
     elif iscompound(proc):
         return apply_compound(proc, args)
     else:
-        check_error(False)
+        raise_error('Not a procedure -- APPLY: %s' % proc)
 
 
 def primitive_procedures():
@@ -366,6 +352,13 @@ def primitive_procedures():
         ('>', gt, 2),
         ('>=', ge, 2),
     ]
+
+    def make_primitive(argc, operation):
+        return table({
+            'type': 'primitive',
+            'argc': argc,
+            'operation': operation,
+        })
 
     res = []
     for symbol, body, argc in PM:

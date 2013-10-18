@@ -20,7 +20,10 @@ t_RPAREN = r'\)'
 
 def t_NUMBER(t):
     r'[\+\-]?\d+\.?\d*'
-    t.value = float(t.value)
+    try:
+        t.value = int(t.value)
+    except ValueError:
+        t.value = float(t.value)
     return t
 
 

@@ -19,10 +19,16 @@ def hits_sources(formatted_data):
 
 
 def facet_terms(name, formatted_data):
+    '''
+        return formatted_data[name]['terms']
+    '''
     return formatted_data.facets[name].terms
 
 
 def facet_entries(name, formatted_data):
+    '''
+        return formatted_data[name]['entries']
+    '''
     return formatted_data.facets[name].entries
 
 

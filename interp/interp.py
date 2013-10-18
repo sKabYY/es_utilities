@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from lslib import InterpError, isvoid, build_ast, eval_seq, setup_environment
+from lslib import (
+    InterpError, build_ast, eval_seq, setup_environment,
+    isvoid, tostring)
 
 
 def driver_loop():
@@ -14,7 +16,7 @@ def driver_loop():
             try:
                 result = eval_seq(build_ast(text), global_env)
                 if not isvoid(result):
-                    print result
+                    print tostring(result)
             except InterpError as e:
                 print '[Error] %s' % str(e)
         except KeyboardInterrupt:

@@ -64,6 +64,7 @@ class Env(object):
 
     def put(self, symbol, value):
         self.current_env[symbol] = value
+        return void()
 
     def lookup(self, symbol):
         cur = self
@@ -99,11 +100,14 @@ def is_tagged_list(exp, tag):
 
 
 class Void(object):
+    def __eq__(self, o):
+        return isinstance(o, Void)
+
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        return '#void'
+        return '#<void>'
 
 
 def void():
@@ -138,6 +142,18 @@ def istrue(b):
     return not isfalse(b)
 
 
+def eq(a, b):
+    return type(a) == type(b) and a == b
+
+
+def eqfalse(v):
+    return eq(v, false())
+
+
+def eqtrue(v):
+    return eq(v, true())
+
+
 # struct of procedure:
 #   table(
 #     type: 'procedure'
@@ -167,9 +183,19 @@ def is_table_type(t, _type):
 # struct of primitive procedure:
 #   table(
 #     type: 'primitive'
+#     name: a string
 #     argc: number, < 0 means any
 #     operation: a function with <argc> arguments
 #   )
+def make_primitive(name, argc, operation):
+    return table({
+        'type': 'primitive',
+        'name': name,
+        'argc': argc,
+        'operation': operation,
+    })
+
+
 def isprimitive(p):
     return is_table_type(p, 'primitive')
 
@@ -180,6 +206,9 @@ def iscompound(p):
 
 def isprocedure(p):
     return isprimitive(p) or iscompound(p)
+
+
+#######################################################################
 
 
 def is_self_evaluating(exp):
@@ -320,8 +349,17 @@ def primitive_procedures():
         else:
             return ns[0] - sum(ns[1:])
 
-    def number_product(*ns):
+    def product(ns):
         return reduce(lambda x, y: x * y, ns)
+
+    def number_multiply(*ns):
+        return product(ns)
+
+    def number_divide(*ns):
+        if len(ns) == 1:
+            return 1. / ns[0]
+        else:
+            return ns[0] / product(ns[1:])
 
     def number_remainder(a, b):
         return a % b
@@ -344,7 +382,8 @@ def primitive_procedures():
     PM = [
         ('+', number_add, -1),
         ('-', number_minus, -1),
-        ('*', number_product, -1),
+        ('*', number_multiply, -1),
+        ('/', number_divide, -1),
         ('%', number_remainder, 2),
         ('=', equal, 2),
         ('<', lt, 2),
@@ -353,22 +392,38 @@ def primitive_procedures():
         ('>=', ge, 2),
     ]
 
-    def make_primitive(argc, operation):
-        return table({
-            'type': 'primitive',
-            'argc': argc,
-            'operation': operation,
-        })
-
     res = []
     for symbol, body, argc in PM:
-        proc = make_primitive(argc, body)
+        proc = make_primitive(symbol, argc, body)
         res.append((symbol, proc))
     return res
 
 
+def buildin_values():
+    return [
+        ('void', void()),
+        ('nil', nil()),
+        ('true', true()),
+        ('false', false()),
+    ]
+
+
 def setup_environment():
     global_env = Env()
-    for symbol, value in primitive_procedures():
+    global_values = primitive_procedures() + buildin_values()
+    for symbol, value in global_values:
         global_env.put(symbol, value)
     return global_env
+
+
+def tostring(v):
+    if eqtrue(v):
+        return 'true'
+    elif eqfalse(v):
+        return 'false'
+    elif isprimitive(v):
+        return '#<procedure %s>' % v.name
+    elif iscompound(v):
+        return '#<procedure>'
+    else:
+        return str(v)

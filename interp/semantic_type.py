@@ -7,10 +7,12 @@ TYPE = enum(
     # base types
     'VOID',
     'NIL',
+    'BOOLEAN',
     'INTEGER',
     'FLOAT',
     'STRING',
     'PROCEDURE',
+    'PRIMITIVE',
     # query types
     # TODO
     # mapper
@@ -51,9 +53,10 @@ def nil():
 def isnil(var):
     return check_type(var, TYPE.NIL)
 
+
 ###
 
-# INTEGER, FLOAT and STRING
+# BOOLEAN, INTEGER, FLOAT and STRING
 #  struct: {
 #    type;
 #    value;
@@ -64,6 +67,41 @@ def fill_type_value(t, v):
     st = SemanticType(t)
     st.value = v
     return st
+
+
+def __do_mkboolean(b):
+    return fill_type_value(TYPE.BOOLEAN, b)
+
+
+__global_true = __do_mkboolean(True)
+__global_false = __do_mkboolean(False)
+
+
+def true():
+    return __global_true
+
+
+def false():
+    return __global_false
+
+
+def mkboolean(b):
+    if bool(b):
+        return true()
+    else:
+        return false()
+
+
+def isboolean(var):
+    return check_type(var, TYPE.BOOLEAN)
+
+
+def isfalse(var):
+    return var == false()
+
+
+def istrue(var):
+    return not isfalse(var)
 
 
 def mkinteger(i):
@@ -100,5 +138,35 @@ def isstring(var):
 #  }
 
 
-def mkprocedure():
-    pass  # TODO
+def mkprocedure(args, body, env):
+    st = SemanticType(TYPE.PROCEDURE)
+    st.args = args
+    st.body = body
+    st.env = env
+    return st
+
+
+def iscompound(var):
+    return check_type(var, TYPE.PROCEDURE)
+
+
+# PRIMITIVE PROCEDURE
+#  struct: {
+#    type;
+#    argc: number of arguments, a negative number means any
+#    body: a python function
+#  }
+
+
+def mkprimitive(argc, body):
+    st = SemanticType(TYPE.PRIMITIVE)
+    st.argc = argc
+    st.body = body
+
+
+def isprimitive(var):
+    return check_type(var, TYPE.PRIMITIVE)
+
+
+def isprocedure(var):
+    return isprimitive(var) or iscompound(var)

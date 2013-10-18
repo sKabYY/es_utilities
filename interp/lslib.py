@@ -66,7 +66,10 @@ def is_token_value(exp, value):
 
 
 def is_tagged_list(exp, tag):
-    return isinstance(exp, list) and is_token_value(exp[0], tag)
+    if isinstance(exp, list) and len(exp) > 0:
+        return is_token_value(exp[0], tag)
+    else:
+        return False
 
 
 class Void(object):
@@ -101,11 +104,11 @@ def false():
     return False
 
 
-def istrue(b):
-    return b == true()
-
-
 def isfalse(b):
+    return b == false()
+
+
+def istrue(b):
     return not istrue(b)
 
 
@@ -260,9 +263,29 @@ def build_ast(text):
                 i += 1
         return node, num_tokens
 
-    tree, end = parse_start(0)
+    token_tree, end = parse_start(0)
     assert end == num_tokens
-    return tree
+    ast_tree = analyze(token_tree)
+    return ast_tree
+
+
+def analyze(exp, env):
+    if is_self_evaluating(exp):
+        return exp.value
+    elif is_variable(exp):
+        return mk_env_lookup(exp.value, env)
+    elif is_definition(exp):
+        return analyze_define(exp, env)
+    elif is_if(exp):
+        return analyze_if(exp, env)
+    elif is_cond(exp):
+        return analyze_cond(exp, env)
+    elif is_lambda(exp):
+        return analyze_lambda(exp, env)
+    elif is_application(exp):
+        return analyze_application(exp, env)
+    else:
+        raise_error('unknown exp type -- ANALYZE: %s' % exp)
 
 
 def eval_seq(exps, env):
@@ -344,16 +367,9 @@ def primitive_procedures():
         ('>=', ge, 2),
     ]
 
-    def make_primitive(operation, argc):
-        return table({
-            'type': 'primitive',
-            'argc': argc,
-            'operation': operation,
-        })
-
     res = []
-    for symbol, operation, argc in PM:
-        proc = make_primitive(operation, argc)
+    for symbol, body, argc in PM:
+        proc = make_primitive(argc, body)
         res.append((symbol, proc))
     return res
 

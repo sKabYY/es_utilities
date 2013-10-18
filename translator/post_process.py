@@ -8,6 +8,11 @@ def _format(origin_data):
 
 
 def hits_sources(formatted_data):
+    '''
+        return formatted_data['hits']['hits']['_source']
+        OR
+        return formatted_data['hits']['hits']['fields']
+    '''
 
     def get_source_or_fields(doc):
         try:
@@ -20,14 +25,14 @@ def hits_sources(formatted_data):
 
 def facet_terms(name, formatted_data):
     '''
-        return formatted_data[name]['terms']
+        return formatted_data['facets'][name]['terms']
     '''
     return formatted_data.facets[name].terms
 
 
 def facet_entries(name, formatted_data):
     '''
-        return formatted_data[name]['entries']
+        return formatted_data['facets'][name]['entries']
     '''
     return formatted_data.facets[name].entries
 

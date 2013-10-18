@@ -30,7 +30,7 @@ class Table(dict):
         self[name] = value
 
 
-class Slots(object):
+class Buckets(object):
     def __init__(self):
         self.container = {}
 

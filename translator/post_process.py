@@ -1,6 +1,6 @@
 #
 
-from common.container import Table, Slots
+from common.container import Table, Buckets
 
 
 def _format(origin_data):
@@ -31,10 +31,10 @@ def groupby_func(data, func):
     <data> is a list of Table
     <func> is a function which maps a Table to a value
     '''
-    slots = Slots()
+    buckets = Buckets()
     for e in data:
-        slots.put(func(e), e)
-    return map(slots.get, sorted(slots))
+        buckets.put(func(e), e)
+    return map(buckets.get, sorted(buckets))
 
 
 def groupby(data, field):

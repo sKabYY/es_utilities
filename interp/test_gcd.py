@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from lslib import build_ast, setup_environment, eval_seq
+from tilib import build_ast, setup_environment, eval_seq
 
 
 text = '''

@@ -5,6 +5,15 @@ table = SimpleTable  # rename SimpleTable
 from scanner import Token
 from scanner import LPAREN, RPAREN, VARIABLE, NUMBER
 
+from titype import (
+    mkvoid, isvoid,
+    mknil,
+    mktrue, istrue, idtrue,
+    mkfalse, idfalse,
+    mkprimitive, isprimitive,
+    mkcompound, iscompound,
+)
+
 
 def build_ast(text):
     from scanner import scanner
@@ -64,7 +73,7 @@ class Env(object):
 
     def put(self, symbol, value):
         self.current_env[symbol] = value
-        return void()
+        return mkvoid()
 
     def lookup(self, symbol):
         cur = self
@@ -84,6 +93,19 @@ class Env(object):
         return new_env
 
 
+#######################################################################
+
+
+def make_procedure(arg_tokens, body):
+    check_error(
+        type(arg_tokens) == list and reduce(
+            lambda x, y: x and y,
+            map(is_variable, arg_tokens)))
+    args = map(lambda a: a.value, arg_tokens)
+    proc = analyze(body)
+    return lambda env: mkcompound(args, proc, env)
+
+
 def is_token_type(exp, _type):
     return isinstance(exp, Token) and exp.type == _type
 
@@ -99,120 +121,8 @@ def is_tagged_list(exp, tag):
         return False
 
 
-class Void(object):
-    def __eq__(self, o):
-        return isinstance(o, Void)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return '#<void>'
-
-
-def void():
-    return Void()
-
-
-def isvoid(v):
-    return isinstance(v, Void)
-
-
-def nil():
-    return []
-
-
-def isnil(l):
-    return isinstance(l, list) and len(l) == 0
-
-
-def true():
-    return True
-
-
-def false():
-    return False
-
-
-def isfalse(b):
-    return b == false()
-
-
-def istrue(b):
-    return not isfalse(b)
-
-
-def eq(a, b):
-    return type(a) == type(b) and a == b
-
-
-def eqfalse(v):
-    return eq(v, false())
-
-
-def eqtrue(v):
-    return eq(v, true())
-
-
-# struct of procedure:
-#   table(
-#     type: 'procedure'
-#     args: is a list of strings,
-#     body: is a list of tokens,
-#     env
-#   )
-def make_procedure(arg_tokens, body):
-    check_error(
-        type(arg_tokens) == list and reduce(
-            lambda x, y: x and y,
-            map(is_variable, arg_tokens)))
-    args = map(lambda a: a.value, arg_tokens)
-    proc = analyze(body)
-    return lambda env: table({
-        'type': 'procedure',
-        'args': args,
-        'body': proc,
-        'env': env,
-    })
-
-
-def is_table_type(t, _type):
-    return isinstance(t, table) and t.type == _type
-
-
-# struct of primitive procedure:
-#   table(
-#     type: 'primitive'
-#     name: a string
-#     argc: number, < 0 means any
-#     operation: a function with <argc> arguments
-#   )
-def make_primitive(name, argc, operation):
-    return table({
-        'type': 'primitive',
-        'name': name,
-        'argc': argc,
-        'operation': operation,
-    })
-
-
-def isprimitive(p):
-    return is_table_type(p, 'primitive')
-
-
-def iscompound(p):
-    return is_table_type(p, 'procedure')
-
-
-def isprocedure(p):
-    return isprimitive(p) or iscompound(p)
-
-
-#######################################################################
-
-
 def is_self_evaluating(exp):
-    return is_token_type(exp, NUMBER)
+    return is_token_type(exp, NUMBER)  # TODO
 
 
 def is_variable(exp):
@@ -319,7 +229,7 @@ def analyze(exp):
 
 
 def eval_seq(exps, env):  # TODO
-    res = void()
+    res = mkvoid()
     for exp in exps:
         res = _eval(exp, env)
     return res
@@ -394,17 +304,17 @@ def primitive_procedures():
 
     res = []
     for symbol, body, argc in PM:
-        proc = make_primitive(symbol, argc, body)
+        proc = mkprimitive(symbol, argc, body)
         res.append((symbol, proc))
     return res
 
 
 def buildin_values():
     return [
-        ('void', void()),
-        ('nil', nil()),
-        ('true', true()),
-        ('false', false()),
+        ('void', mkvoid()),
+        ('nil', mknil()),
+        ('true', mktrue()),
+        ('false', mkfalse()),
     ]
 
 
@@ -417,9 +327,11 @@ def setup_environment():
 
 
 def tostring(v):
-    if eqtrue(v):
+    if isvoid(v):
+        return '#<void>'
+    elif idtrue(v):
         return 'true'
-    elif eqfalse(v):
+    elif idfalse(v):
         return 'false'
     elif isprimitive(v):
         return '#<procedure %s>' % v.name

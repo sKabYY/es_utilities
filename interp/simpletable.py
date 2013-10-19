@@ -25,3 +25,7 @@ def enum(*seq, **params):
     except KeyError:
         key_mapper = lambda x: x
     return SimpleTable(seq, key_mapper)
+
+
+def mktable(**kwargs):
+    return SimpleTable(kwargs)

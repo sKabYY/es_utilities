@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from lslib import (
+from tilib import (
     InterpError, build_ast, eval_seq, setup_environment,
     isvoid, tostring)
 

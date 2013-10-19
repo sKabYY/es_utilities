@@ -8,8 +8,8 @@ text = '''
 (display (gcd 144 12144))
 '''
 
-import lslib
-tree = lslib.build_ast(text)
+import tilib
+tree = tilib.build_ast(text)
 
 from pprint import pprint
 pprint(tree)

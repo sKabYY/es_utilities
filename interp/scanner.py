@@ -6,12 +6,14 @@ t_ignore = ', \t\r'
 LPAREN = 'LPAREN'
 RPAREN = 'RPAREN'
 NUMBER = 'NUMBER'
+STRING = 'STRING'
 VARIABLE = 'VARIABLE'
 
 tokens = (
     LPAREN,
     RPAREN,
     NUMBER,
+    STRING,
     VARIABLE,
 )
 t_LPAREN = r'\('
@@ -24,6 +26,12 @@ def t_NUMBER(t):
         t.value = int(t.value)
     except ValueError:
         t.value = float(t.value)
+    return t
+
+
+def t_STRING(t):
+    r'"[^"]*"'
+    t.value = t.value[1:-1]
     return t
 
 

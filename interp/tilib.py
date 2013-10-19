@@ -3,7 +3,7 @@
 from simpletable import SimpleTable, enum
 table = SimpleTable  # rename SimpleTable
 from scanner import Token
-from scanner import LPAREN, RPAREN, VARIABLE, NUMBER
+from scanner import LPAREN, RPAREN, VARIABLE, NUMBER, STRING
 
 from titype import (
     mkvoid, isvoid,
@@ -110,6 +110,10 @@ def is_token_type(exp, _type):
     return isinstance(exp, Token) and exp.type == _type
 
 
+def is_token_in_types(exp, types):
+    return isinstance(exp, Token) and exp.type in types
+
+
 def is_token_value(exp, value):
     return isinstance(exp, Token) and exp.value == value
 
@@ -122,7 +126,8 @@ def is_tagged_list(exp, tag):
 
 
 def is_self_evaluating(exp):
-    return is_token_type(exp, NUMBER)  # TODO
+    self_evaluating_types = (NUMBER, STRING)
+    return is_token_in_types(exp, self_evaluating_types)  # TODO
 
 
 def is_variable(exp):

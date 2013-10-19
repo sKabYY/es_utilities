@@ -5,6 +5,7 @@ text = '''
   (if (= a 0)
       b
       (gcd (remainder b a) a)))
+(display "hehe")
 (display (gcd 144 12144))
 '''
 

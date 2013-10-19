@@ -138,7 +138,7 @@ def iscompound(var):
 #   table(
 #     type: 'primitive'
 #     name: a string
-#     argc: number, a negative number means any
+#     argc: a function that check the number of arguments
 #     operation: a function with <argc> arguments
 #   )
 def mkprimitive(name, argc, operation):

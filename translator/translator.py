@@ -144,7 +144,7 @@ class Hits(ResponseType):
             size: integer
             fields: list of string, optional, default all fields
             condition: Condition, optional
-            sort: dict{field, 'asc'/'dsc'}, optional
+            sort: dict{field: 'asc'/'dsc'}, optional
         '''
         self.size = size
         self.fields = fields

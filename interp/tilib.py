@@ -203,7 +203,7 @@ def analyze_application(exp):
 
 
 def apply_primitive(proc, args):
-    check_error(proc.argc < 0 or proc.argc == len(args))
+    check_error(proc.argc < 0 or proc.argc(len(args)))
     return apply(proc.operation, args)
 
 
@@ -294,17 +294,29 @@ def primitive_procedures():
     def ge(a, b):
         return a >= b
 
+    def bind1st(func, a):
+        return lambda b: func(a, b)
+
+    def ge1st(a):
+        return bind1st(ge, a)
+
+    def eq1st(a):
+        return bind1st(equal, a)
+
+    def _any(a):
+        return True
+
     PM = [
-        ('+', number_add, -1),
-        ('-', number_minus, -1),
-        ('*', number_multiply, -1),
-        ('/', number_divide, -1),
-        ('%', number_remainder, 2),
-        ('=', equal, 2),
-        ('<', lt, 2),
-        ('<=', le, 2),
-        ('>', gt, 2),
-        ('>=', ge, 2),
+        ('+', number_add, _any),
+        ('-', number_minus, ge1st(1)),
+        ('*', number_multiply, _any),
+        ('/', number_divide, ge1st(1)),
+        ('%', number_remainder, eq1st(2)),
+        ('=', equal, eq1st(2)),
+        ('<', lt, eq1st(2)),
+        ('<=', le, eq1st(2)),
+        ('>', gt, eq1st(2)),
+        ('>=', ge, eq1st(2)),
     ]
 
     res = []

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 from tilib import (
     InterpError, build_ast, eval_seq, setup_environment,
     isvoid, tostring)
@@ -17,9 +19,11 @@ def driver_loop(global_env, get_prompt):
                 if not isvoid(result):
                     print tostring(result)
             except InterpError as e:
-                print '[Error] %s' % str(e)
+                print >> sys.stderr, '[Error] %s' % str(e)
         except KeyboardInterrupt:
             print
+        except Exception as e:
+            print >>sys.stderr, e
     print '\nBye~'
 
 

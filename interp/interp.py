@@ -27,5 +27,9 @@ def driver_loop(global_env, get_prompt):
     print '\nBye~'
 
 
+def dostring(env, src):
+    pass
+
+
 if __name__ == '__main__':
     driver_loop(setup_environment(), lambda: '> ')

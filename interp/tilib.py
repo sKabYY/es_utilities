@@ -336,8 +336,14 @@ def _any(a):
     return True
 
 
+def display(v):
+    print tostring(v)
+    return mkvoid()
+
+
 def primitive_procedures():
     PM = [
+        ('display', display, eq2nd(1)),
         ('+', number_add, _any),
         ('-', number_minus, ge2nd(1)),
         ('*', number_multiply, _any),

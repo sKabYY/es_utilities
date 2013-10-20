@@ -16,8 +16,15 @@ tokens = (
     STRING,
     VARIABLE,
 )
+
+
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
+
+
+def t_comment(t):
+    r';.*'
+    t.lexer.lineno += 1
 
 
 def t_NUMBER(t):
@@ -37,6 +44,7 @@ def t_STRING(t):
 
 def symbol_chars(ext):
     return r'[%sa-zA-Z=<>\*\+\-/%%]' % ext
+
 t_VARIABLE = '%s%s*' % (symbol_chars(''), symbol_chars(r'0-9!\?'))
 
 
@@ -51,7 +59,11 @@ def t_error(t):
 
 
 import ply.lex as lex
-__lexer = lex.lex()
+__global_lexer = lex.lex()
+
+
+def new_lexer():
+    return __global_lexer.clone()
 
 
 class Token(object):
@@ -72,10 +84,11 @@ def lex_to_tokens(t):
 
 
 def scanner(text):
-    __lexer.input(text)
+    lexer = new_lexer()
+    lexer.input(text)
     buf = []
     while True:
-        tok = __lexer.token()
+        tok = lexer.token()
         if not tok:
             break
         buf.append(tok)

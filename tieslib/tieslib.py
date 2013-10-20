@@ -89,8 +89,8 @@ def ties_primitive_procedures():
         # conditions
         ('Equal', Equal, eq2nd(2)),
         ('Range', Range, eq2nd(3)),
-        ('And', And, eq2nd(1)),
-        ('Or', Or, eq2nd(1)),
+        ('And', lambda *conds: And(conds), le2nd(1)),
+        ('Or', lambda *conds: Or(conds), le2nd(1)),
         ('Not', Not, eq2nd(1)),
         # translate and search
         ('translate-hits', translate_hits, le2nd(4)),

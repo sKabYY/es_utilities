@@ -48,7 +48,7 @@ def groupby_func(data, func):
     return map(buckets.get, sorted(buckets))
 
 
-def groupby(data, field):
+def groupby_field(data, field):
     '''
     <data> is a list of Table or dictionary which has key <field>.
     '''
@@ -56,6 +56,9 @@ def groupby(data, field):
 
 
 def number(s):
+    '''
+    Translate string <s> to an integer or a float.
+    '''
     try:
         return int(s)
     except ValueError:

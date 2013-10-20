@@ -23,7 +23,8 @@ def driver_loop(global_env, get_prompt):
             except InterpError as e:
                 print >>sys.stderr, '[Error] %s' % str(e)
             except Exception as e:
-                print >>sys.stderr, e
+                import traceback
+                traceback.print_exc(None, sys.stderr)
         except KeyboardInterrupt:
             print
     print '\nBye~'

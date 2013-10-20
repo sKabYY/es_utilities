@@ -5,7 +5,7 @@ from pprint import pprint
 import elasticsearch as ES
 from translator.translator import translate, Hits
 from translator.post_process import _format, hits_sources
-from translator.post_process import groupby, difference
+from translator.post_process import groupby_field, difference
 
 
 post_data = translate(
@@ -24,6 +24,6 @@ pprint(sources)
 
 print
 
-diff = map(lambda l: difference(l, 'total'), groupby(sources, 'name'))
+diff = map(lambda l: difference(l, 'total'), groupby_field(sources, 'name'))
 print 'diff'
 pprint(diff)

@@ -263,7 +263,7 @@ def analyze(exp):
         raise_error('unknown exp type -- ANALYZE: %s' % exp)
 
 
-def eval_seq(exps, env):  # TODO
+def eval_seq(exps, env):
     res = mkvoid()
     for exp in exps:
         res = _eval(exp, env)
@@ -365,9 +365,15 @@ def display(v):
     return mkvoid()
 
 
+def _map(proc, seq):
+    check_error(islist(seq))
+    return map(lambda e: _apply(proc, mklist(e)), seq)
+
+
 def primitive_procedures():
     PM = [
         ('display', display, eq2nd(1)),
+        ('map', _map, eq2nd(2)),
         ('+', number_add, _any),
         ('-', number_minus, ge2nd(1)),
         ('*', number_multiply, _any),

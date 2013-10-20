@@ -5,12 +5,11 @@ from tilib import (
     isvoid, tostring)
 
 
-def driver_loop():
-    global_env = setup_environment()
+def driver_loop(global_env, get_prompt):
     while True:
         try:
             try:
-                text = raw_input('> ')
+                text = raw_input(get_prompt())
             except EOFError:
                 break
             try:
@@ -25,4 +24,4 @@ def driver_loop():
 
 
 if __name__ == '__main__':
-    driver_loop()
+    driver_loop(setup_environment(), lambda: '> ')

@@ -13,8 +13,7 @@ TYPE = enum(
     'PRIMITIVE',
     # mutable types
     'LIST',
-    # query types
-    # TODO
+    'TABLE',
     # mapper
     key_mapper=lambda s: s
 )
@@ -158,17 +157,29 @@ def isprocedure(var):
 # use the list in python
 
 
-def mknil():
-    return []
-
-
-def isnil(var):
-    identical(var, mknil)
-
-
-def mklist():
-    return mknil()
+def mklist(*args):
+    return list(args)
 
 
 def islist(var):
     return isinstance(var, list)
+
+
+def mknil():
+    return mklist()
+
+
+def isnil(var):
+    identical(var, mknil())
+
+
+# table ###################################################
+# use the dict in python
+
+
+def mktable():
+    assert False  # TODO
+
+
+def istable(var):
+    return isinstance(var, dict)

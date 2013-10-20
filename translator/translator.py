@@ -129,7 +129,7 @@ class Not(NotAtomCondition):
 
 
 # Response Type ###########################################
-class ResponseType(object):
+class ESQueryType(object):
     def is_facet(self):
         return False
 
@@ -137,7 +137,7 @@ class ResponseType(object):
         return False
 
 
-class Hits(ResponseType):
+class Hits(ESQueryType):
     def __init__(self, size, fields=None, condition=None, sort=None):
         '''
         parameters:
@@ -166,7 +166,7 @@ class Hits(ResponseType):
         return d
 
 
-class Facet(ResponseType):
+class Facet(ESQueryType):
     def __init__(self, name, condition):
         self.name = name
         self.condition = condition
@@ -258,7 +258,11 @@ class Histogram(Facet):
 ###########################################################
 
 
-def translate(hits, facets, conditions):
+def translate(hits, facets=[], conditions=[]):
+    '''
+    <facets> is a list of Facet
+    <conditions> is a list of Condition
+    '''
     def select_a_query_condition(conditions):
         qcond = NilCondition()
         for condition in conditions:

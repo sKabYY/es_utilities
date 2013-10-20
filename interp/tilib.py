@@ -12,6 +12,8 @@ from titype import (
     mkfalse, idfalse,
     mkprimitive, isprimitive,
     mkcompound, iscompound,
+    mklist, islist,
+    istable,
 )
 
 
@@ -59,6 +61,9 @@ class InterpError(Exception):
 
 def check_error(b, msg=None):
     if not b:
+        if msg is None:
+            import traceback
+            msg = '\n' + '\n'.join(traceback.format_stack())
         raise InterpError(msg)
 
 
@@ -74,6 +79,10 @@ class Env(object):
     def put(self, symbol, value):
         self.current_env[symbol] = value
         return mkvoid()
+
+    def putall(self, symbol_value_list):
+        for symbol, value in symbol_value_list:
+            self.put(symbol, value)
 
     def lookup(self, symbol):
         cur = self
@@ -203,7 +212,8 @@ def analyze_application(exp):
 
 
 def apply_primitive(proc, args):
-    check_error(proc.argc < 0 or proc.argc(len(args)))
+    check_error(proc.argc(len(args)),
+                '%s: incorrect argument count' % tostring(proc))
     return apply(proc.operation, args)
 
 
@@ -253,77 +263,90 @@ def _apply(proc, args):
         raise_error('Not a procedure -- APPLY: %s' % proc)
 
 
+# primitive procedures ####################################
+
+
+def number_add(*ns):
+    return sum(ns)
+
+
+def number_minus(*ns):
+    if len(ns) == 1:
+        return -ns[0]
+    else:
+        return ns[0] - sum(ns[1:])
+
+
+def product(ns):
+    return reduce(lambda x, y: x * y, ns)
+
+
+def number_multiply(*ns):
+    return product(ns)
+
+
+def number_divide(*ns):
+    if len(ns) == 1:
+        return 1. / ns[0]
+    else:
+        return ns[0] / product(ns[1:])
+
+
+def number_remainder(a, b):
+    return a % b
+
+
+def equal(a, b):
+    return a == b
+
+
+def lt(a, b):
+    return a < b
+
+
+def le(a, b):
+    return a <= b
+
+
+def gt(a, b):
+    return a > b
+
+
+def ge(a, b):
+    return a >= b
+
+
+def bind2nd(func, b):
+    return lambda a: func(a, b)
+
+
+def ge2nd(a):
+    return bind2nd(ge, a)
+
+
+def eq2nd(a):
+    return bind2nd(equal, a)
+
+
+def _any(a):
+    return True
+
+
 def primitive_procedures():
-
-    def number_add(*ns):
-        return sum(ns)
-
-    def number_minus(*ns):
-        if len(ns) == 1:
-            return -ns[0]
-        else:
-            return ns[0] - sum(ns[1:])
-
-    def product(ns):
-        return reduce(lambda x, y: x * y, ns)
-
-    def number_multiply(*ns):
-        return product(ns)
-
-    def number_divide(*ns):
-        if len(ns) == 1:
-            return 1. / ns[0]
-        else:
-            return ns[0] / product(ns[1:])
-
-    def number_remainder(a, b):
-        return a % b
-
-    def equal(a, b):
-        return a == b
-
-    def lt(a, b):
-        return a < b
-
-    def le(a, b):
-        return a <= b
-
-    def gt(a, b):
-        return a > b
-
-    def ge(a, b):
-        return a >= b
-
-    def bind1st(func, a):
-        return lambda b: func(a, b)
-
-    def ge1st(a):
-        return bind1st(ge, a)
-
-    def eq1st(a):
-        return bind1st(equal, a)
-
-    def _any(a):
-        return True
-
     PM = [
         ('+', number_add, _any),
-        ('-', number_minus, ge1st(1)),
+        ('-', number_minus, ge2nd(1)),
         ('*', number_multiply, _any),
-        ('/', number_divide, ge1st(1)),
-        ('%', number_remainder, eq1st(2)),
-        ('=', equal, eq1st(2)),
-        ('<', lt, eq1st(2)),
-        ('<=', le, eq1st(2)),
-        ('>', gt, eq1st(2)),
-        ('>=', ge, eq1st(2)),
+        ('/', number_divide, ge2nd(1)),
+        ('%', number_remainder, eq2nd(2)),
+        ('=', equal, eq2nd(2)),
+        ('<', lt, eq2nd(2)),
+        ('<=', le, eq2nd(2)),
+        ('>', gt, eq2nd(2)),
+        ('>=', ge, eq2nd(2)),
+        ('list', mklist, _any),
     ]
-
-    res = []
-    for symbol, body, argc in PM:
-        proc = mkprimitive(symbol, argc, body)
-        res.append((symbol, proc))
-    return res
+    return map(lambda (s, b, a): (s, mkprimitive(s, a, b)), PM)
 
 
 def buildin_values():
@@ -338,21 +361,29 @@ def buildin_values():
 def setup_environment():
     global_env = Env()
     global_values = primitive_procedures() + buildin_values()
-    for symbol, value in global_values:
-        global_env.put(symbol, value)
+    global_env.putall(global_values)
     return global_env
 
 
+import pprint
+__global_format_map = [
+    (isvoid, lambda v: '#<void>'),
+    (idtrue, lambda v: 'true'),
+    (idfalse, lambda v: 'false'),
+    (isprimitive, lambda v: '#<procedure %s>' % v.name),
+    (iscompound, lambda v: '#<procedure>'),
+    (islist, lambda v: pprint.pformat(v)),
+    (istable, lambda v: pprint.pformat(v)),
+]
+
+
+def put_format_map(*args):
+    for predicate, tostr in args:
+        __global_format_map.append(predicate, tostr)
+
+
 def tostring(v):
-    if isvoid(v):
-        return '#<void>'
-    elif idtrue(v):
-        return 'true'
-    elif idfalse(v):
-        return 'false'
-    elif isprimitive(v):
-        return '#<procedure %s>' % v.name
-    elif iscompound(v):
-        return '#<procedure>'
-    else:
-        return str(v)
+    for predicate, tostr in __global_format_map:
+        if predicate(v):
+            return tostr(v)
+    return str(v)

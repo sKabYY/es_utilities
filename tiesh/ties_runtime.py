@@ -1,2 +1,0 @@
-class QueryType(object):
-    pass

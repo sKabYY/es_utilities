@@ -29,6 +29,9 @@ class AtomCondition(Condition):
 
 
 class Equal(AtomCondition):
+    '''
+    Need the field is not analyzed.
+    '''
     def __init__(self, field, value):
         self.field = field
         self.value = value
@@ -138,7 +141,7 @@ class ESQueryType(object):
 
 
 class Hits(ESQueryType):
-    def __init__(self, size, fields=None, condition=None, sort=None):
+    def __init__(self, size, fields=[], condition=None, sort=None):
         '''
         parameters:
             size: integer
@@ -157,7 +160,7 @@ class Hits(ESQueryType):
     def to_dict(self):
         d = {}
         d['size'] = self.size
-        if self.fields is not None:
+        if self.fields != []:
             d['fields'] = self.fields
         if self.condition is not None:
             d['filter'] = self.condition.to_dict()

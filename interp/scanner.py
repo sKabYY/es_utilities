@@ -37,7 +37,7 @@ def t_STRING(t):
 
 def symbol_chars(ext):
     return r'[%sa-zA-Z=<>\*\+\-/%%]' % ext
-t_VARIABLE = '%s%s*' % (symbol_chars(''), symbol_chars('0-9'))
+t_VARIABLE = '%s%s*' % (symbol_chars(''), symbol_chars(r'0-9!\?'))
 
 
 def t_newline(t):

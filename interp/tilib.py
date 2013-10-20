@@ -320,6 +320,10 @@ def bind2nd(func, b):
     return lambda a: func(a, b)
 
 
+def le2nd(a):
+    return bind2nd(le, a)
+
+
 def ge2nd(a):
     return bind2nd(ge, a)
 

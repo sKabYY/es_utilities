@@ -352,6 +352,10 @@ def eq2nd(a):
     return bind2nd(equal, a)
 
 
+def inrange(a, b):
+    return lambda x: a <= x <= b
+
+
 def _any(a):
     return True
 

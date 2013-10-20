@@ -10,6 +10,7 @@ from titype import (
     mknil,
     mktrue, istrue, idtrue,
     mkfalse, idfalse,
+    isstring,
     mkprimitive, isprimitive,
     mkcompound, iscompound,
     mklist, islist,
@@ -46,6 +47,7 @@ def build_ast(text):
 #keywords
 KW = enum(
     'define',
+    'load',
     'if',
     'cond',
     'lambda',
@@ -164,6 +166,22 @@ def analyze_define(exp):
         return lambda env: env.put(exp[1].value, proc(env))
 
 
+def is_load(exp):
+    return is_tagged_list(exp, KW.LOAD)
+
+
+def analyze_load(exp):
+    check_error(len(exp) == 2)
+
+    def load(env):
+        fn = _eval(exp[1], env)
+        check_error(isstring(fn))
+        dofile(fn, env)
+        return mkvoid()
+
+    return load
+
+
 def is_if(exp):
     return is_tagged_list(exp, KW.IF)
 
@@ -231,6 +249,8 @@ def analyze(exp):
         return lambda env: env.lookup(exp.value)
     elif is_definition(exp):
         return analyze_define(exp)
+    elif is_load(exp):
+        return analyze_load(exp)
     elif is_if(exp):
         return analyze_if(exp)
     elif is_cond(exp):
@@ -397,3 +417,12 @@ def tostring(v):
         if predicate(v):
             return tostr(v)
     return str(v)
+
+
+def dostring(src, env):
+    return eval_seq(build_ast(src), env)
+
+
+def dofile(fn, env):
+    with open(fn) as f:
+        dostring(f.read(), env)

@@ -4,7 +4,9 @@ import sys
 
 from tilib import (
     InterpError, build_ast, eval_seq, setup_environment,
-    isvoid, tostring)
+    isvoid, tostring,
+    dofile
+)
 
 
 def driver_loop(global_env, get_prompt):
@@ -19,17 +21,16 @@ def driver_loop(global_env, get_prompt):
                 if not isvoid(result):
                     print tostring(result)
             except InterpError as e:
-                print >> sys.stderr, '[Error] %s' % str(e)
+                print >>sys.stderr, '[Error] %s' % str(e)
+            except Exception as e:
+                print >>sys.stderr, e
         except KeyboardInterrupt:
             print
-        except Exception as e:
-            print >>sys.stderr, e
     print '\nBye~'
 
 
-def dostring(env, src):
-    pass
-
-
 if __name__ == '__main__':
-    driver_loop(setup_environment(), lambda: '> ')
+    if len(sys.argv) == 1:
+        driver_loop(setup_environment(), lambda: '> ')
+    else:
+        dofile(sys.argv[1], setup_environment())  # TODO

@@ -293,8 +293,12 @@ def number_add(*ns):
 def number_minus(*ns):
     if len(ns) == 1:
         return -ns[0]
+    elif len(ns) == 2:
+        return ns[0] - ns[1]
     else:
-        return ns[0] - sum(ns[1:])
+        # TODO: need to check whether the type has zero value
+        zero = type(ns[1])()
+        return ns[0] - sum(ns[1:], zero)
 
 
 def product(ns):

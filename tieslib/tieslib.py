@@ -90,7 +90,7 @@ def add_default(args, default_list):
     return res
 
 
-# functions ################################################
+# functions for elasticsearch #############################
 
 
 def translate_hits(*args):
@@ -146,6 +146,25 @@ def search_histogram(*args):
     return facet_entries(__GLOBAL_HISTOGRAM_TAGS, es_search(post_data))
 
 
+# functions of datetime ###################################
+
+
+import common.timeutils as tt
+from datetime import timedelta
+
+
+def now():
+    return tt.get_now()
+
+
+def hours(n):
+    return timedelta(hours=n)
+
+
+def days(n):
+    return timedelta(days=n)
+
+
 ###########################################################
 
 
@@ -171,6 +190,10 @@ def ties_primitive_procedures():
         ('search-terms', search_terms, inrange(1, 4)),
         ('translate-histogram', translate_histogram, inrange(1, 3)),
         ('search-histogram', search_histogram, inrange(1, 3)),
+        # datetime
+        ('now', now, eq2nd(0)),
+        ('hours', hours, eq2nd(1)),
+        ('days', days, eq2nd(1)),
     ]
     return map(lambda (s, b, a): (s, mkprimitive(s, a, b)), PM)
 

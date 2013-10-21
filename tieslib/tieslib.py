@@ -78,6 +78,12 @@ def es_search(post_data):
     return _format(es.search(**kwargs))
 
 
+def translate_wrapper(hits, facets, conditions):
+    if not isinstance(conditions, list):
+        conditions = [conditions]
+    return translate(hits, facets, conditions)
+
+
 def add_default(args, default_list):
     '''
     '''
@@ -99,9 +105,7 @@ def translate_hits(*args):
     '''
     size, fields, conditions, sort = add_default(args, [10, [], [], None])
     h = Hits(size, fields,  None, sort)
-    if not isinstance(conditions, list):
-        conditions = [conditions]
-    post_data = translate(h, [], conditions)
+    post_data = translate_wrapper(h, [], conditions)
     return post_data
 
 
@@ -119,7 +123,7 @@ def translate_terms(*args):
     '''
     field, size, conditions = add_default(args, [None, 10, []])
     t = Terms(__GLOBAL_TERMS_TAGS, field, size)
-    post_data = translate(Hits(0), [t], conditions)
+    post_data = translate_wrapper(Hits(0), [t], conditions)
     return post_data
 
 
@@ -137,7 +141,7 @@ def translate_histogram(*args):
     '''
     ts_field, interval, conditions = add_default(args, [None, 'hour', []])
     h = Histogram(__GLOBAL_HISTOGRAM_TAGS, ts_field, interval)
-    post_data = translate(Hits(0), [h], conditions)
+    post_data = translate_wrapper(Hits(0), [h], conditions)
     return post_data
 
 

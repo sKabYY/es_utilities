@@ -80,7 +80,6 @@ class Env(object):
 
     def put(self, symbol, value):
         self.current_env[symbol] = value
-        return mkvoid()
 
     def putall(self, symbol_value_list):
         for symbol, value in symbol_value_list:
@@ -149,6 +148,11 @@ def is_definition(exp):
     return is_tagged_list(exp, KW.DEFINE)
 
 
+def env_put(env, symbol, value):
+    env.put(symbol, value)
+    return mkvoid()
+
+
 # Two types of define:
 #   1, (define (f x) x)
 #   2, (define a 1.0) or (define f (lambda (x) x))
@@ -159,11 +163,11 @@ def analyze_define(exp):
         check_error(len(subexp) > 0 and is_variable(subexp[0]))
         arguments = subexp[1:]
         proc = make_procedure(arguments, exp[2])
-        return lambda env: env.put(subexp[0].value, proc(env))
+        return lambda env: env_put(env, subexp[0].value, proc(env))
     else:
         check_error(is_variable(exp[1]))
         proc = analyze(exp[2])
-        return lambda env: env.put(exp[1].value, proc(env))
+        return lambda env: env_put(env, exp[1].value, proc(env))
 
 
 def is_load(exp):

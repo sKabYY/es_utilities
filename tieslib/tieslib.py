@@ -175,7 +175,7 @@ def days(n):
 def ties_primitive_procedures():
     PM = [
         # environment
-        ('connect', connect, eq2nd(2)),
+        ('connect!', connect, eq2nd(2)),
         ('set-index!', set_index, eq2nd(1)),
         ('get-index', get_index, eq2nd(0)),
         ('set-doc-type!', set_doc_type, eq2nd(1)),

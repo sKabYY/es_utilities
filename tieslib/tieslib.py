@@ -14,13 +14,16 @@ from interp.tilib import (
     le2nd, eq2nd, inrange,
     setup_environment,
 )
-from interp.titype import mkvoid, mkprimitive
+from interp.titype import (
+    mkvoid, isvoid,
+    mkprimitive,
+)
 
 
 __global_url = 'localhost'
 __global_port = '9200'
 __global_index = '*'
-__global_doc_type = '*'
+__global_doc_type = mkvoid()
 
 
 def connect(url, port):
@@ -52,10 +55,13 @@ def get_doc_type():
 
 
 def prompt():
-    return '%s:%s/%s/%s' % (
-        __global_url, __global_port,
-        __global_index, __global_doc_type,
+    p = '%s:%s/%s' % (
+        __global_url, __global_port, __global_index,
     )
+    if isvoid(__global_doc_type):
+        return p
+    else:
+        return '%s/%s' % (p, __global_doc_type)
 
 
 def es_search(post_data):
@@ -63,11 +69,13 @@ def es_search(post_data):
         'host': __global_url,
         'post': __global_port,
     }])
-    return _format(es.search(
-        index=__global_index,
-        doc_type=__global_doc_type,
-        body=post_data
-    ))
+    kwargs = {
+        'index': __global_index,
+        'body': post_data,
+    }
+    if not isvoid(__global_doc_type):
+        kwargs['doc_type'] = __global_doc_type
+    return _format(es.search(**kwargs))
 
 
 def add_default(args, default_list):
@@ -102,7 +110,7 @@ def search_hits(*args):
     return hits_sources(es_search(post_data))
 
 
-__global_terms_tags = '__terms__'
+__GLOBAL_TERMS_TAGS = '__terms__'
 
 
 def translate_terms(*args):
@@ -110,17 +118,17 @@ def translate_terms(*args):
     args: [field, size, conditions]
     '''
     field, size, conditions = add_default(args, [None, 10, []])
-    t = Terms(__global_terms_tags, field, size)
+    t = Terms(__GLOBAL_TERMS_TAGS, field, size)
     post_data = translate(Hits(0), [t], conditions)
     return post_data
 
 
 def search_terms(*args):
     post_data = translate_terms(*args)
-    return facet_terms(__global_terms_tags, es_search(post_data))
+    return facet_terms(__GLOBAL_TERMS_TAGS, es_search(post_data))
 
 
-__global_histogram_tags = '__histogram__'
+__GLOBAL_HISTOGRAM_TAGS = '__histogram__'
 
 
 def translate_histogram(*args):
@@ -128,14 +136,14 @@ def translate_histogram(*args):
     args: [timestamp_field, interval, conditions]
     '''
     ts_field, interval, conditions = add_default(args, [None, 'hour', []])
-    h = Histogram(__global_histogram_tags, ts_field, interval)
+    h = Histogram(__GLOBAL_HISTOGRAM_TAGS, ts_field, interval)
     post_data = translate(Hits(0), [h], conditions)
     return post_data
 
 
 def search_histogram(*args):
     post_data = translate_histogram(*args)
-    return facet_entries(__global_histogram_tags, es_search(post_data))
+    return facet_entries(__GLOBAL_HISTOGRAM_TAGS, es_search(post_data))
 
 
 ###########################################################

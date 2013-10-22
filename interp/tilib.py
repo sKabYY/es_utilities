@@ -380,6 +380,7 @@ def _map(proc, seq):
 
 def primitive_procedures():
     PM = [
+        ('void', mkvoid, eq2nd(0)),
         ('display', display, eq2nd(1)),
         ('map', _map, eq2nd(2)),
         ('+', number_add, _any),
@@ -399,7 +400,6 @@ def primitive_procedures():
 
 def buildin_values():
     return [
-        ('void', mkvoid()),
         ('nil', mknil()),
         ('true', mktrue()),
         ('false', mkfalse()),

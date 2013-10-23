@@ -10,6 +10,51 @@ def write_tmp(s):
         print >>f, s
 
 
+def mknewline_code():
+    return ctrlc('j')
+
+
+def mknewline_char():
+    return chr(mknewline_code())
+
+
+def is_newline(c):
+    if isinstance(c, int):
+        return c == mknewline_code()
+    elif isinstance(c, str):
+        return c == mknewline_char()
+    return False
+
+
+def is_tab(c):
+    if isinstance(c, int):
+        return c == ord('\t')
+    elif isinstance(c, str):
+        return c == '\t'
+    else:
+        return False
+
+
+def expand_tab():
+    tabstop = 2
+    return ' ' * tabstop
+
+
+def code_to_string(code):
+    if ca.isprint(code):
+        return chr(code)
+    elif is_newline(code):
+        return mknewline_char()
+    elif is_tab(code):
+        return expand_tab()
+    else:
+        raise ValueError('Unknown code %s' % code)
+
+
+def printable_code(code):
+    return isprint(code) or is_tab(code)
+
+
 def ctrlc(c):
     return ord(ctrl(c))
 
@@ -50,7 +95,7 @@ def ctrl_newline_or_execute(sb):
     if sb.is_end_of_line():
         sb.execute()
     else:
-        sb.addnewline()
+        sb.newline()
 
 
 def ctrl_clear_to_end(sb):
@@ -86,15 +131,12 @@ def key_map(key_code):
         return key_code
 
 
-def mknewline():
-    return ctrlc('j')
-
-
-def is_newline(key_code):
-    return key_code == ctrlc('j')
-
-
 def control_keys(key_code):
+    r'''
+        LF: \n, ^J.  Execute.
+        CR: \r, ^M.  Execute if cursor is at the end of line.
+        EOT: ^D.  Delete current char or exit
+    '''
     return {
         ctrlc('a'): ctrl_goto_start_of_line,
         ctrlc('b'): ctrl_move_left,
@@ -104,12 +146,12 @@ def control_keys(key_code):
         ctrlc('g'): ctrl_unknown,
         ctrlc('h'): ctrl_delete_backward,
         ctrlc('j'): ctrl_execute,
+        ctrlc('m'): ctrl_newline_or_execute,
         ctrlc('k'): ctrl_clear_to_end,
         ctrlc('l'): ctrl_refresh_screen,
         ctrlc('n'): ctrl_move_down,
         ctrlc('o'): ctrl_insert_newline,
         ctrlc('p'): ctrl_move_up,
-        ca.CR: ctrl_newline_or_execute,
     }[key_code]
 
 
@@ -144,17 +186,8 @@ class FIFOBuf(object):
         return repr(self.__l)
 
 
-def char_buf_to_lines(buf, width):
-    lines = []
-    tmpbuf = []
-    for key_code in buf:
-        if is_newline(key_code) or len(tmpbuf) == width:
-            lines.append(''.join(tmpbuf))
-            tmpbuf = []
-        if isprint(key_code):
-            tmpbuf.append(chr(key_code))
-    lines.append(''.join(tmpbuf))
-    return lines
+def code_list_to_string(buf):
+    return ''.join(map(code_to_string, buf))
 
 
 def string_to_lines(string, width):
@@ -189,13 +222,7 @@ class ScreenBuf(object):
         self.input_pos = 0
 
     def input_buf_to_string(self):
-        def to_char(key_code):
-            if is_newline(key_code):
-                return '\n'
-            else:
-                return chr(key_code)
-
-        return map(to_char, self.input_buf)
+        return code_list_to_string(self.input_buf)
 
     def get_size(self):
         self.height, self.width = self.window.getmaxyx()
@@ -212,12 +239,15 @@ class ScreenBuf(object):
                     y += 1
                     x = 0
                     idx += 1
-                elif x == width:
-                    y += 1
-                    x = 0
+                elif x >= width:
+                    y += x / width
+                    x %= width
                 else:
-                    x += 1
+                    x += len(code_to_string(c))
                     idx += 1
+            if x > width:
+                y += x / width
+                x %= width
             return y, x
 
         def display_line(line):
@@ -237,16 +267,16 @@ class ScreenBuf(object):
             return lineno
 
         self.window.clear()
-        prompt_buf = map(ord, self.prompt)
-        all_buf = prompt_buf + self.input_buf
-        inp_lines = char_buf_to_lines(all_buf, self.width)
-        y, x = find_pos(
-            all_buf,
-            self.input_pos + len(prompt_buf),
+        # The result of string_to_lines and find_pos must be concordance.
+        inp_lines = string_to_lines(
+            self.prompt + self.input_buf_to_string(),
             self.width
         )
-        write_tmp(str(self.history_buf))
-        write_tmp(str(inp_lines))
+        y, x = find_pos(
+            map(ord, self.prompt) + self.input_buf,
+            self.input_pos + len(self.prompt),
+            self.width
+        )
         self.window.move(0, 0)
         if len(inp_lines) >= self.height:
             display_backward(inp_lines, self.height, 0)
@@ -265,25 +295,16 @@ class ScreenBuf(object):
         return self.input_pos == len(self.input_buf)
 
     def execute(self):
-        def to_char(key_code):
-            if is_newline(key_code):
-                return '\n'
-            else:
-                return chr(key_code)
-
-        #source = ''.join(map(to_char, self.input_buf))
-        lines = char_buf_to_lines(
-            map(ord, self.prompt) + self.input_buf,
+        #source = self.input_buf_to_string()
+        lines = string_to_lines(
+            self.prompt + self.input_buf_to_string(),
             self.width
         )
         self.history_buf.addall(lines)
         self.reset_input_buf()
 
-    def addnewline(self):
-        self.addch(mknewline())
-
-    def newline_with_prompt(self):
-        pass
+    def newline(self):
+        self.addch(mknewline_code())
 
     def move_up(self):
         pass
@@ -305,7 +326,7 @@ def driver_loop(stdscr):
     while True:
         inp = stdscr.getch()
         inp = key_map(inp)
-        #write_tmp(inp)
+        write_tmp(inp)
         if iscntrl(inp):
             do_ctrl(sb, inp)
         else:

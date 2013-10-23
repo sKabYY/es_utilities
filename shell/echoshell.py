@@ -157,6 +157,19 @@ def char_buf_to_lines(buf, width):
     return lines
 
 
+def string_to_lines(string, width):
+    lines = []
+    tmpbuf = []
+    for c in string:
+        if c == '\n' or len(tmpbuf) == width:
+            lines.append(''.join(tmpbuf))
+            tmpbuf = []
+        if isprint(c):
+            tmpbuf.append(c)
+    lines.append(''.join(tmpbuf))
+    return lines
+
+
 MAX_BUFF = 500
 
 
@@ -174,6 +187,15 @@ class ScreenBuf(object):
     def reset_input_buf(self):
         self.input_buf = []
         self.input_pos = 0
+
+    def input_buf_to_string(self):
+        def to_char(key_code):
+            if is_newline(key_code):
+                return '\n'
+            else:
+                return chr(key_code)
+
+        return map(to_char, self.input_buf)
 
     def get_size(self):
         self.height, self.width = self.window.getmaxyx()

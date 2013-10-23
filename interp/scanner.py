@@ -1,7 +1,7 @@
 # lex #####################################################
 
 # ignore spaces and comma
-t_ignore = ', \t\r'
+t_ignore = ' \t\r'
 
 LPAREN = 'LPAREN'
 RPAREN = 'RPAREN'

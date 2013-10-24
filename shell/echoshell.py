@@ -7,7 +7,7 @@ from curses.ascii import ctrl, iscntrl, isprint
 
 def write_tmp(s):
     with open('log.out', 'a') as f:
-        print >>f, s
+        f.write(s)
 
 
 def mknewline_code():
@@ -210,8 +210,8 @@ class ScreenBuf(object):
     def __init__(self, window):
         self.window = window
         self.get_size()
-        write_tmp('h=%s' % self.height)
-        write_tmp('w=%s' % self.width)
+        #write_tmp('h=%s' % self.height)
+        #write_tmp('w=%s' % self.width)
         self.history_buf = FIFOBuf(MAX_BUFF)
         self.prompt = '> '
         self.reset_input_buf()
@@ -295,13 +295,52 @@ class ScreenBuf(object):
         return self.input_pos == len(self.input_buf)
 
     def execute(self):
-        #source = self.input_buf_to_string()
+        source = self.input_buf_to_string()
         lines = string_to_lines(
-            self.prompt + self.input_buf_to_string(),
+            self.prompt + source,
             self.width
         )
         self.history_buf.addall(lines)
         self.reset_input_buf()
+
+        def dostring_wrapper(out_conn, source):
+            from interp.tilib import dostring, tostring
+            from tieslib.tieslib import setup_ties_environment
+            import sys
+
+            class conn_wrapper(object):
+                def __init__(self, conn):
+                    self.conn = conn
+
+                def write(self, string):
+                    self.conn.send(string)
+
+                def flush(self):
+                    pass
+
+            stdout_bak = sys.stdout
+            sys.stdout = conn_wrapper(out_conn)
+            result = dostring(source, setup_ties_environment())
+            out_conn.send(tostring(result))
+            out_conn.close()
+            sys.stdout = stdout_bak
+
+        def do_execute(source):
+            from multiprocessing import Process, Pipe
+            in_conn, out_conn = Pipe()
+            p = Process(target=dostring_wrapper, args=(out_conn, source))
+            p.start()
+            out_conn.close()
+            try:
+                while True:
+                    output = in_conn.recv()
+                    write_tmp(output)
+            except EOFError:
+                pass
+            p.join()
+            in_conn.close()
+
+        do_execute(source)
 
     def newline(self):
         self.addch(mknewline_code())
@@ -326,7 +365,7 @@ def driver_loop(stdscr):
     while True:
         inp = stdscr.getch()
         inp = key_map(inp)
-        write_tmp(inp)
+        #write_tmp(inp)
         if iscntrl(inp):
             do_ctrl(sb, inp)
         else:
@@ -355,4 +394,5 @@ def my_wrapper(proc, *args, **kwargs):
         proc(stdscr, *args, **kwargs)
 
 
-my_wrapper(driver_loop)
+def run():
+    my_wrapper(driver_loop)

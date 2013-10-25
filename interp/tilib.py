@@ -1,5 +1,7 @@
 ##
 
+import sys
+
 from simpletable import SimpleTable, enum
 table = SimpleTable  # rename SimpleTable
 from scanner import Token
@@ -369,7 +371,7 @@ def _any(a):
 
 
 def display(v):
-    print tostring(v)
+    sys.stdout.write(tostring(v))
     return mkvoid()
 
 

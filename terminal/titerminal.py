@@ -28,6 +28,9 @@ def mknewline_char():
 
 
 def is_newline(c):
+    r'''
+    newline is "\n"
+    '''
     if isinstance(c, int):
         return c == mknewline_code()
     elif isinstance(c, str):
@@ -101,7 +104,7 @@ def string_to_lines(string, width):
     lines = []
     tmpbuf = []
     for c in string:
-        if c == '\n' or len(tmpbuf) == width:
+        if is_newline(c) or len(tmpbuf) == width:
             lines.append(''.join(tmpbuf))
             tmpbuf = []
         if isprint(c):
@@ -152,7 +155,7 @@ class CommandMode(object):
         self.prompt = '> '
         self.reset_input_buf()
         # output buffer
-        self.output_buf = []
+        self.reset_output_buf()
 
     def is_input_mode(self):
         return self.state == CommandMode.STATE_INPUT
@@ -198,11 +201,24 @@ class CommandMode(object):
         '''
         return code_list_to_string(self.input_buf)
 
+    def reset_output_buf(self):
+        '''
+        Clean the output buffer.
+        '''
+        self.output_buf = ['']
+
     def output_buf_to_string(self):
         '''
         Translate input buffer to a string.
         '''
         return ''.join(self.output_buf)
+
+    def reset_all_buf(self):
+        '''
+        Clean the input buffer and output buffer.
+        '''
+        self.reset_input_buf()
+        self.reset_output_buf()
 
     def handle_input(self, key_code):
         '''
@@ -259,11 +275,14 @@ class CommandMode(object):
     def write(self, string):
         self.output_buf.append(string)
 
-    def flush(self):
+    def flush_output_buf_except_last(self):
         output = self.output_buf_to_string()
         outlines = string_to_lines(output, self.width)
+        self.output_buf = [outlines.pop()]
         self.history_buf.addall(outlines)
-        self.output_buf = []
+
+    def flush(self):
+        self.flush_output_buf_except_last()
         self.refresh()
 
     def refresh(self):
@@ -311,29 +330,35 @@ class CommandMode(object):
         self.window.clear()
         # The result of string_to_lines and find_pos must be concordance.
         if self.is_input_mode():
-            inp_lines = string_to_lines(
-                self.prompt + self.input_buf_to_string(),
+            input_string = self.input_buf_to_string()
+            output_string = self.output_buf_to_string()
+            prompt = output_string + self.prompt
+            last_lines = string_to_lines(
+                prompt + input_string,
                 self.width
             )
             y, x = find_pos(
-                map(ord, self.prompt) + self.input_buf,
-                self.input_pos + len(self.prompt),
+                map(ord, prompt) + self.input_buf,
+                self.input_pos + len(prompt),
                 self.width
             )
         elif self.is_output_mode():
-            inp_lines = ['']
-            y = 0
-            x = 0
+            last_lines = string_to_lines(
+                self.output_buf_to_string(),
+                self.width
+            )
+            y = len(last_lines) - 1
+            x = len(last_lines[-1])
         else:
             raise Exception('Unknown state %s' % self.state_name())
 
         self.window.move(0, 0)
-        if len(inp_lines) >= self.height:
-            display_backward(inp_lines, self.height, 0)
+        if len(last_lines) >= self.height:
+            display_backward(last_lines, self.height, 0)
         else:
-            rest_num = self.height - len(inp_lines)
+            rest_num = self.height - len(last_lines)
             next_lineno = display_backward(self.history_buf, rest_num, 0)
-            display_backward(inp_lines, len(inp_lines), next_lineno)
+            display_backward(last_lines, len(last_lines), next_lineno)
             y += next_lineno
         self.window.move(y, x)
 
@@ -356,16 +381,17 @@ class CommandMode(object):
         '''
         source = self.input_buf_to_string()
         lines = string_to_lines(
-            self.prompt + source,
+            self.output_buf_to_string() + self.prompt + source,
             self.width
         )
         self.history_buf.addall(lines)
-        self.reset_input_buf()
+        self.reset_all_buf()
 
         self.enter_output_mode()
         result = dostring(source, self.global_env)
         if not isvoid(result):
             self.write(tostring(result))
+            self.write(mknewline_char())
         self.flush()
         self.enter_input_mode()
 

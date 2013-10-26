@@ -106,13 +106,19 @@ class FIFOBuf(object):
 def string_to_lines(string, width):
     lines = []
     tmpbuf = []
+
+    def flush_tmpbuf():
+        lines.append(''.join(tmpbuf))
+        del tmpbuf[:]  # ugly! clear list tmpbuf
+
     for c in string:
-        if is_newline(c) or len(tmpbuf) == width:
-            lines.append(''.join(tmpbuf))
-            tmpbuf = []
-        if isprint(c):
+        if is_newline(c):
+            flush_tmpbuf()
+        elif isprint(c):
             tmpbuf.append(c)
-    lines.append(''.join(tmpbuf))
+            if len(tmpbuf) == width:
+                flush_tmpbuf()
+    flush_tmpbuf()
     return lines
 
 
@@ -302,7 +308,6 @@ class CommandMode(BaseMode):
             do_ctrl(self, key_code)
         else:
             self.addch(key_code)
-        self.refresh()
 
     def write(self, string):
         self.output_buf.append(string)
@@ -368,6 +373,7 @@ class CommandMode(BaseMode):
 
         self.window.clear()
         # The result of string_to_lines and find_pos must be concordance.
+        # y and x is the position relative to last_lines.
         prompt = self.prompt()
         if self.is_input_mode():
             last_lines = string_to_lines(
@@ -395,6 +401,7 @@ class CommandMode(BaseMode):
         self.window.move(0, 0)
         if len(last_lines) >= self.height:
             display_backward(last_lines, self.height, 0)
+            y -= len(last_lines) - self.height
         else:
             rest_num = self.height - len(last_lines)
             next_lineno = display_backward(self.history_buf, rest_num, 0)
@@ -421,7 +428,7 @@ class CommandMode(BaseMode):
         '''
         source = self.input_buf_to_string()
         lines = string_to_lines(
-            self.output_buf_to_string() + self.prompt() + source,
+            self.prompt() + source,
             self.width
         )
         self.history_buf.addall(lines)
@@ -452,6 +459,11 @@ class CommandMode(BaseMode):
         pass
 
     def ctrl_keyboard_interrupt(self):
+        lines = string_to_lines(
+            self.prompt() + self.input_buf_to_string(),
+            self.width
+        )
+        self.history_buf.addall(lines)
         self.reset_input_buf()
 
     def ctrl_goto_start_of_line(self):

@@ -50,9 +50,8 @@ def is_tab(c):
         return False
 
 
-def expand_tab():
-    tabstop = 2
-    return ' ' * tabstop
+def is_print_or_newline(code):
+    return ca.isprint(code) or is_newline(code)
 
 
 def code_to_string(code):
@@ -60,8 +59,6 @@ def code_to_string(code):
         return chr(code)
     elif is_newline(code):
         return mknewline_char()
-    elif is_tab(code):
-        return expand_tab()
     else:
         raise ValueError('Unknown code %s' % code)
 
@@ -270,6 +267,8 @@ class CommandMode(BaseMode):
                 curses.KEY_RIGHT: ctrlc('f'),
                 curses.KEY_BACKSPACE: ctrlc('h'),
                 curses.KEY_DC: ctrlc('d'),
+                curses.KEY_HOME: ctrlc('a'),
+                curses.KEY_END: ctrlc('e'),
             }
             try:
                 return m[key_code]
@@ -282,7 +281,7 @@ class CommandMode(BaseMode):
                 CR: \r, ^M.  Execute if cursor is at the end of line.
                 EOT: ^D.  Delete current char or exit
             '''
-            return {
+            m = {
                 ctrlc('a'): scr.ctrl_goto_start_of_line,
                 ctrlc('b'): scr.ctrl_move_left,
                 ctrlc('c'): scr.ctrl_keyboard_interrupt,
@@ -298,7 +297,11 @@ class CommandMode(BaseMode):
                 ctrlc('n'): scr.ctrl_move_down,
                 ctrlc('o'): scr.ctrl_insert_newline,
                 ctrlc('p'): scr.ctrl_move_up,
-            }[key_code]
+            }
+            try:
+                return m[key_code]
+            except KeyError:
+                return scr.ctrl_unknown
 
         def do_ctrl(scr, key_code):
             control_keys(scr, key_code)()
@@ -306,8 +309,11 @@ class CommandMode(BaseMode):
         key_code = key_map(key_code)
         if iscntrl(key_code):
             do_ctrl(self, key_code)
-        else:
+        elif is_print_or_newline(key_code):
             self.addch(key_code)
+        else:
+            # do nothing
+            pass
 
     def write(self, string):
         self.output_buf.append(string)

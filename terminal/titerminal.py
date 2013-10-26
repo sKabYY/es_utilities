@@ -289,7 +289,7 @@ class CommandMode(BaseMode):
                 ctrlc('d'): scr.ctrl_delete_current_or_exit,
                 ctrlc('e'): scr.ctrl_goto_end_of_line,
                 ctrlc('f'): scr.ctrl_move_right,
-                ctrlc('g'): scr.ctrl_unknown,
+                ctrlc('g'): scr.ctrl_beep,
                 ctrlc('h'): scr.ctrl_delete_backward,
                 ctrlc('j'): scr.ctrl_execute,
                 ctrlc('m'): scr.ctrl_newline_or_execute,
@@ -458,6 +458,9 @@ class CommandMode(BaseMode):
     def ctrl_unknown(self):
         pass
 
+    def ctrl_beep(self):
+        curses.beep()
+
     def ctrl_keyboard_interrupt(self):
         lines = string_to_lines(
             self.prompt() + self.input_buf_to_string(),
@@ -537,6 +540,8 @@ def curses_wrapper(proc, *args, **kwargs):
     class open_curses(object):
         def __enter__(self):
             self.stdscr = curses.initscr()
+            curses.start_color()
+            curses.use_default_colors()
             curses.noecho()
             curses.nonl()
             curses.cbreak()

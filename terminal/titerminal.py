@@ -195,6 +195,9 @@ class CommandMode(object):
         self.input_buf = []
         self.input_pos = 0
 
+    def input_buf_is_empty(self):
+        return len(self.input_buf) == 0
+
     def input_buf_to_string(self):
         '''
         Translate input buffer to a string.
@@ -207,9 +210,12 @@ class CommandMode(object):
         '''
         self.output_buf = ['']
 
+    def output_buf_is_empty(self):
+        return len(self.output_buf) == 1 and self.output_buf[0] == ''
+
     def output_buf_to_string(self):
         '''
-        Translate input buffer to a string.
+        Translate output buffer to a string.
         '''
         return ''.join(self.output_buf)
 
@@ -276,10 +282,17 @@ class CommandMode(object):
         self.output_buf.append(string)
 
     def flush_output_buf_except_last(self):
-        output = self.output_buf_to_string()
-        outlines = string_to_lines(output, self.width)
-        self.output_buf = [outlines.pop()]
-        self.history_buf.addall(outlines)
+        if not self.output_buf_is_empty():
+            output = self.output_buf_to_string()
+            outlines = string_to_lines(output, self.width)
+            self.output_buf = [outlines.pop()]
+            self.history_buf.addall(outlines)
+
+    def flush_output_buf_all(self):
+        self.flush_output_buf_except_last()
+        if not self.output_buf_is_empty():
+            self.history_buf.add(self.output_buf[0])
+            self.reset_output_buf()
 
     def flush(self):
         self.flush_output_buf_except_last()
@@ -392,7 +405,8 @@ class CommandMode(object):
         if not isvoid(result):
             self.write(tostring(result))
             self.write(mknewline_char())
-        self.flush()
+        self.flush_output_buf_all()
+        self.refresh()
         self.enter_input_mode()
 
     def newline(self):

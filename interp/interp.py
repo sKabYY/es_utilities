@@ -3,13 +3,27 @@
 import sys
 
 from tilib import (
-    InterpError, build_ast, eval_seq, setup_environment,
-    isvoid, tostring,
+    InterpError, setup_environment,
+    isvoid, tostring, dostring,
     dofile
 )
 
 
-def driver_loop(global_env, get_prompt):
+class Interpreter(object):
+    def __init__(self, _eval, newenv):
+        self.__eval = _eval
+        self.__newenv = newenv
+        self.reset()
+
+    def reset(self):
+        self.__global_env = self.__newenv()
+
+    def eval(self, code):
+        return self.__eval(code, self.__global_env)
+
+
+def driver_loop(newenv, get_prompt):
+    interpreter = Interpreter(dostring, newenv)
     while True:
         try:
             try:
@@ -17,9 +31,9 @@ def driver_loop(global_env, get_prompt):
             except EOFError:
                 break
             try:
-                result = eval_seq(build_ast(text), global_env)
-                if not isvoid(result):
-                    print tostring(result)
+                output = interpreter.eval(text)
+                if not isvoid(output):
+                    print tostring(output)
             except InterpError as e:
                 print >>sys.stderr, '[Error] %s' % str(e)
             except Exception as e:
@@ -32,6 +46,6 @@ def driver_loop(global_env, get_prompt):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        driver_loop(setup_environment(), lambda: '> ')
+        driver_loop(setup_environment, lambda: '> ')
     else:
         dofile(sys.argv[1], setup_environment())  # TODO

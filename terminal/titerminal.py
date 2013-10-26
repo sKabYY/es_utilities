@@ -3,8 +3,7 @@ import curses
 import curses.ascii as ca
 from curses.ascii import ctrl, iscntrl, isprint
 
-from interp.tilib import dostring, tostring, isvoid
-from tieslib.tieslib import setup_ties_environment
+from interp.tilib import tostring, isvoid, InterpError
 
 
 def write_tmp(s):  # TODO
@@ -117,11 +116,17 @@ class TiTerminal(object):
     '''
     This is a state machine.
     '''
-    def __init__(self, window):
-        self.command_mode = CommandMode(window)
-        self.view_mode = ViewMode(window)
+    def __init__(self, window, prompt, interpreter):
+        self.window = lambda: window
+        self.command_mode = CommandMode(self, prompt, interpreter)
+        self.view_mode = ViewMode(self)
         self.current_mode = None
         self.enter_mode(self.command_mode)
+        self.isclosed = lambda: False
+
+    def close(self):
+        self.isclosed = lambda: True
+        self.enter_mode(None)
 
     def enter_mode(self, mode):
         if self.current_mode is not None:
@@ -129,9 +134,6 @@ class TiTerminal(object):
         self.current_mode = mode
         if self.current_mode is not None:
             self.current_mode.enter()
-
-    def close(self):
-        self.enter_mode(None)
 
     def handle_input(self, key_code):
         self.current_mode.handle_input(key_code)
@@ -145,14 +147,17 @@ class CommandMode(object):
     STATE_INPUT = '*INPUT MODE*'
     STATE_OUTPUT = '*OUTPUT MODE*'
 
-    def __init__(self, window):
+    def __init__(self, terminal, prompt, interpreter):
+        self.terminal = terminal
         self.enter_input_mode()
-        self.window = window
+        self.window = terminal.window()
         self.fetch_size()
+        # interpreter
+        self.interpreter = interpreter
         # history buffer
         self.history_buf = FIFOBuf(CommandMode.MAX_BUFF)
         # input buffer
-        self.prompt = '> '
+        self.prompt = prompt
         self.reset_input_buf()
         # output buffer
         self.reset_output_buf()
@@ -176,8 +181,8 @@ class CommandMode(object):
         # redirect stdout, maybe stderr?
         self.backup_stdout = sys.stdout
         sys.stdout = self
-        # environment
-        self.global_env = setup_ties_environment()
+        # reset interpreter
+        self.interpreter.reset()
 
     def exit(self):
         sys.stdout = self.backup_stdout
@@ -254,7 +259,8 @@ class CommandMode(object):
             return {
                 ctrlc('a'): scr.ctrl_goto_start_of_line,
                 ctrlc('b'): scr.ctrl_move_left,
-                ctrlc('d'): scr.ctrl_delete_current,
+                ctrlc('c'): scr.ctrl_keyboard_interrupt,
+                ctrlc('d'): scr.ctrl_delete_current_or_exit,
                 ctrlc('e'): scr.ctrl_goto_end_of_line,
                 ctrlc('f'): scr.ctrl_move_right,
                 ctrlc('g'): scr.ctrl_unknown,
@@ -342,12 +348,10 @@ class CommandMode(object):
 
         self.window.clear()
         # The result of string_to_lines and find_pos must be concordance.
+        prompt = self.prompt()
         if self.is_input_mode():
-            input_string = self.input_buf_to_string()
-            output_string = self.output_buf_to_string()
-            prompt = output_string + self.prompt
             last_lines = string_to_lines(
-                prompt + input_string,
+                prompt + self.input_buf_to_string(),
                 self.width
             )
             y, x = find_pos(
@@ -394,17 +398,23 @@ class CommandMode(object):
         '''
         source = self.input_buf_to_string()
         lines = string_to_lines(
-            self.output_buf_to_string() + self.prompt + source,
+            self.output_buf_to_string() + self.prompt() + source,
             self.width
         )
         self.history_buf.addall(lines)
         self.reset_all_buf()
 
         self.enter_output_mode()
-        result = dostring(source, self.global_env)
-        if not isvoid(result):
-            self.write(tostring(result))
-            self.write(mknewline_char())
+        try:
+            output = self.interpreter.eval(source)
+            if not isvoid(output):
+                self.write(tostring(output))
+                self.write(mknewline_char())
+        except InterpError as e:
+            self.write('[Error] %s' % str(e))
+        except Exception as e:
+            import traceback
+            traceback.print_exc(None, self)
         self.flush_output_buf_all()
         self.refresh()
         self.enter_input_mode()
@@ -417,6 +427,9 @@ class CommandMode(object):
 
     def ctrl_unknown(self):
         pass
+
+    def ctrl_keyboard_interrupt(self):
+        self.reset_input_buf()
 
     def ctrl_goto_start_of_line(self):
         self.input_pos = 0
@@ -441,9 +454,11 @@ class CommandMode(object):
     def ctrl_move_down(self):
         pass
 
-    def ctrl_delete_current(self):
+    def ctrl_delete_current_or_exit(self):
         if self.input_pos < len(self.input_buf):
             self.input_buf.pop(self.input_pos)
+        elif self.input_buf_is_empty():
+            self.terminal.close()
 
     def ctrl_goto_end_of_line(self):
         self.input_pos = len(self.input_buf)
@@ -503,13 +518,25 @@ def curses_wrapper(proc, *args, **kwargs):
         proc(stdscr, *args, **kwargs)
 
 
-def driver_loop():
+def driver_loop(get_prompt, interpreter):
 
     def main_loop(stdscr):
-        terminal = TiTerminal(stdscr)
-        while True:
+        terminal = TiTerminal(stdscr, get_prompt, interpreter)
+        while not terminal.isclosed():
             terminal.refresh()
-            inp = stdscr.getch()
-            terminal.handle_input(inp)
+            try:
+                inp = stdscr.getch()
+                terminal.handle_input(inp)
+            except KeyboardInterrupt:
+                # This may be a bug of module curses.
+                # Python version: 2.7.4
+                # getch() cannot catch Ctrl-C.
+                # Moreover, after catching the KeyboardInterrupt exception,
+                # the calling of getch() failed and a unknown character
+                # whose code is -1 remains in the keyboard input buffer.
+                # So I have to call getch() again to clear the -1 character
+                # and call ungetch(ctrlc('c')) to help curses catch Ctrl-C.
+                stdscr.getch()  # This will return -1.
+                curses.ungetch(ctrlc('c'))
 
     curses_wrapper(main_loop)

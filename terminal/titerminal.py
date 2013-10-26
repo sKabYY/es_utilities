@@ -18,6 +18,10 @@ def ctrlc(c):
     return ord(ctrl(c))
 
 
+def is_resize_event(key_code):
+    return key_code == curses.KEY_RESIZE
+
+
 def mknewline_code():
     return ctrlc('j')
 
@@ -117,7 +121,7 @@ class TiTerminal(object):
     This is a state machine.
     '''
     def __init__(self, window, prompt, interpreter):
-        self.window = lambda: window
+        self.window = window
         self.command_mode = CommandMode(self, prompt, interpreter)
         self.view_mode = ViewMode(self)
         self.current_mode = None
@@ -135,22 +139,54 @@ class TiTerminal(object):
         if self.current_mode is not None:
             self.current_mode.enter()
 
+    def resize(self):
+        self.current_mode.resize()
+
     def handle_input(self, key_code):
-        self.current_mode.handle_input(key_code)
+        if is_resize_event(key_code):
+            self.resize()
+        else:
+            self.current_mode.handle_input(key_code)
 
     def refresh(self):
         self.current_mode.refresh()
 
 
-class CommandMode(object):
+class BaseMode(object):
+    def __init__(self, terminal):
+        self.terminal = terminal
+        self.window = terminal.window
+
+    def enter(self):
+        # redirect stdout, where is stderr?
+        self.backup_stdout = sys.stdout
+        sys.stdout = self
+        # reset interpreter
+        self.interpreter.reset()
+
+    def exit(self):
+        sys.stdout = self.backup_stdout
+
+    def fetch_size(self):
+        '''
+        Update the height and width of the window.
+        '''
+        self.height, self.width = self.window.getmaxyx()
+
+    def resize(self):
+        self.fetch_size()
+        self.window.resize(self.height, self.width)
+        self.refresh()
+
+
+class CommandMode(BaseMode):
     MAX_BUFF = 500
     STATE_INPUT = '*INPUT MODE*'
     STATE_OUTPUT = '*OUTPUT MODE*'
 
     def __init__(self, terminal, prompt, interpreter):
-        self.terminal = terminal
+        super(CommandMode, self).__init__(terminal)
         self.enter_input_mode()
-        self.window = terminal.window()
         self.fetch_size()
         # interpreter
         self.interpreter = interpreter
@@ -176,22 +212,6 @@ class CommandMode(object):
 
     def state_name(self):
         return self.state
-
-    def enter(self):
-        # redirect stdout, maybe stderr?
-        self.backup_stdout = sys.stdout
-        sys.stdout = self
-        # reset interpreter
-        self.interpreter.reset()
-
-    def exit(self):
-        sys.stdout = self.backup_stdout
-
-    def fetch_size(self):
-        '''
-        Update the height and width of the window.
-        '''
-        self.height, self.width = self.window.getmaxyx()
 
     def reset_input_buf(self):
         '''
@@ -315,17 +335,17 @@ class CommandMode(object):
             idx = 0
             while idx != pos:
                 c = buf[idx]
-                if is_newline(c):
+                if x >= width:
+                    y += x / width
+                    x %= width
+                elif is_newline(c):
                     y += 1
                     x = 0
                     idx += 1
-                elif x >= width:
-                    y += x / width
-                    x %= width
                 else:
                     x += len(code_to_string(c))
                     idx += 1
-            if x > width:
+            if x >= width:
                 y += x / width
                 x %= width
             return y, x
@@ -366,6 +386,9 @@ class CommandMode(object):
             )
             y = len(last_lines) - 1
             x = len(last_lines[-1])
+            if x == self.width:
+                y += 1
+                x = 0
         else:
             raise Exception('Unknown state %s' % self.state_name())
 
@@ -492,9 +515,9 @@ class CommandMode(object):
         self.newline()
 
 
-class ViewMode(object):
-    def __init__(self, window):
-        self.window = window
+class ViewMode(BaseMode):
+    def __init__(self, terminal):
+        super(ViewMode, self).__init__(terminal)
 
 
 def curses_wrapper(proc, *args, **kwargs):

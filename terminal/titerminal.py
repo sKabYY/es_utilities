@@ -126,9 +126,9 @@ class TiTerminal(object):
     def __init__(self, window, prompt, interpreter):
         self.window = window
         self.command_mode = CommandMode(self, prompt, interpreter)
-        self.view_mode = ViewMode(self)
+        self.view_mode = ViewMode(self, self.command_mode.history_buf)
         self.current_mode = None
-        self.enter_mode(self.command_mode)
+        self.enter_command_mode()
         self.isclosed = lambda: False
 
     def close(self):
@@ -136,11 +136,18 @@ class TiTerminal(object):
         self.enter_mode(None)
 
     def enter_mode(self, mode):
-        if self.current_mode is not None:
-            self.current_mode.exit()
-        self.current_mode = mode
-        if self.current_mode is not None:
-            self.current_mode.enter()
+        if mode != self.current_mode:
+            if self.current_mode is not None:
+                self.current_mode.exit()
+            self.current_mode = mode
+            if self.current_mode is not None:
+                self.current_mode.enter()
+
+    def enter_command_mode(self):
+        self.enter_mode(self.command_mode)
+
+    def enter_view_mode(self):
+        self.enter_mode(self.view_mode)
 
     def resize(self):
         self.current_mode.resize()
@@ -159,16 +166,7 @@ class BaseMode(object):
     def __init__(self, terminal):
         self.terminal = terminal
         self.window = terminal.window
-
-    def enter(self):
-        # redirect stdout, where is stderr?
-        self.backup_stdout = sys.stdout
-        sys.stdout = self
-        # reset interpreter
-        self.interpreter.reset()
-
-    def exit(self):
-        sys.stdout = self.backup_stdout
+        self.fetch_size()
 
     def fetch_size(self):
         '''
@@ -190,7 +188,6 @@ class CommandMode(BaseMode):
     def __init__(self, terminal, prompt, interpreter):
         super(CommandMode, self).__init__(terminal)
         self.enter_input_mode()
-        self.fetch_size()
         # interpreter
         self.interpreter = interpreter
         # history buffer
@@ -212,6 +209,16 @@ class CommandMode(BaseMode):
 
     def enter_output_mode(self):
         self.state = CommandMode.STATE_OUTPUT
+
+    def enter(self):
+        # redirect stdout, where is stderr?
+        self.backup_stdout = sys.stdout
+        sys.stdout = self
+        # reset interpreter
+        self.interpreter.reset()
+
+    def exit(self):
+        sys.stdout = self.backup_stdout
 
     def state_name(self):
         return self.state
@@ -275,7 +282,7 @@ class CommandMode(BaseMode):
             except KeyError:
                 return key_code
 
-        def control_keys(scr, key_code):
+        def get_ctrl_handler(scr, key_code):
             r'''
                 LF: \n, ^J.  Execute.
                 CR: \r, ^M.  Execute if cursor is at the end of line.
@@ -297,6 +304,7 @@ class CommandMode(BaseMode):
                 ctrlc('n'): scr.ctrl_move_down,
                 ctrlc('o'): scr.ctrl_insert_newline,
                 ctrlc('p'): scr.ctrl_move_up,
+                ca.ESC: scr.ctrl_change_to_view_mode,
             }
             try:
                 return m[key_code]
@@ -304,7 +312,7 @@ class CommandMode(BaseMode):
                 return scr.ctrl_unknown
 
         def do_ctrl(scr, key_code):
-            control_keys(scr, key_code)()
+            get_ctrl_handler(scr, key_code)()
 
         key_code = key_map(key_code)
         if iscntrl(key_code):
@@ -535,10 +543,92 @@ class CommandMode(BaseMode):
     def ctrl_insert_newline(self):
         self.newline()
 
+    def ctrl_change_to_view_mode(self):
+        self.terminal.enter_view_mode()
+
 
 class ViewMode(BaseMode):
-    def __init__(self, terminal):
+    def __init__(self, terminal, text_buf):
         super(ViewMode, self).__init__(terminal)
+        self.text_buf = text_buf
+        self.offset = 0
+
+    def enter(self):
+        self.offset = 0
+
+    def exit(self):
+        pass
+
+    def resize(self):
+        super(ViewMode, self).resize()
+
+    def num_text_lines(self):
+        return self.height - 1
+
+    def adjust_offset(self):
+        max_offset = len(self.text_buf) - self.num_text_lines()
+        if max_offset < 0:
+            max_offset = 0
+        if self.offset < 0:
+            self.offset = 0
+        elif self.offset > max_offset:
+            self.offset = max_offset
+
+    def set_offset(self, offset):
+        self.offset = offset
+        self.adjust_offset()
+
+    def handle_input(self, key_code):
+
+        def key_map(key_code):
+            m = {
+            }
+            try:
+                return m[key_code]
+            except KeyError:
+                return key_code
+
+        def get_ctrl_handlers(scr, key_code):
+            m = {
+                ord('q'): scr.ctrl_change_to_command_mode,
+                ord('j'): scr.ctrl_move_down,
+                ord('k'): scr.ctrl_move_up,
+            }
+            try:
+                return m[key_code]
+            except KeyError:
+                return scr.ctrl_unknown
+
+        get_ctrl_handlers(self, key_code)()
+
+    def ctrl_change_to_command_mode(self):
+        self.terminal.enter_command_mode()
+
+    def ctrl_unknown(self):
+        '''
+        Do nothing.
+        '''
+        pass
+
+    def ctrl_move_down(self):
+        self.set_offset(self.offset - 1)
+
+    def ctrl_move_up(self):
+        self.set_offset(self.offset + 1)
+
+    def refresh(self):
+        self.window.clear()
+        num_lines = self.num_text_lines()
+        start_lineno = len(self.text_buf) - num_lines
+        start_lineno -= self.offset
+        if start_lineno < 0:
+            start_lineno = 0
+        for i in xrange(start_lineno, start_lineno + num_lines):
+            line = self.text_buf[i]
+            self.window.move(i - start_lineno, 0)
+            self.window.addnstr(line, self.width)
+        self.window.move(num_lines, 0)
+        self.window.addnstr('*** VIEW MODE ***', self.width)
 
 
 def curses_wrapper(proc, *args, **kwargs):

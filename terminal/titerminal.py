@@ -1,3 +1,6 @@
+# The following code is not designed well.
+# Maybe I will rewrite it later.
+
 import sys
 import curses
 import curses.ascii as ca
@@ -130,8 +133,12 @@ class TiTerminal(object):
         self.current_mode = None
         self.enter_command_mode()
         self.isclosed = lambda: False
+        # redirect stdout, where is stderr?
+        self.backup_stdout = sys.stdout
+        sys.stdout = self
 
     def close(self):
+        sys.stdout = self.backup_stdout
         self.isclosed = lambda: True
         self.enter_mode(None)
 
@@ -211,14 +218,11 @@ class CommandMode(BaseMode):
         self.state = CommandMode.STATE_OUTPUT
 
     def enter(self):
-        # redirect stdout, where is stderr?
-        self.backup_stdout = sys.stdout
-        sys.stdout = self
         # reset interpreter
         self.interpreter.reset()
 
     def exit(self):
-        sys.stdout = self.backup_stdout
+        pass
 
     def state_name(self):
         return self.state
@@ -304,7 +308,7 @@ class CommandMode(BaseMode):
                 ctrlc('n'): scr.ctrl_move_down,
                 ctrlc('o'): scr.ctrl_insert_newline,
                 ctrlc('p'): scr.ctrl_move_up,
-                ca.ESC: scr.ctrl_change_to_view_mode,
+                ctrlc('v'): scr.ctrl_change_to_view_mode,
             }
             try:
                 return m[key_code]
@@ -413,14 +417,17 @@ class CommandMode(BaseMode):
             raise Exception('Unknown state %s' % self.state_name())
 
         self.window.move(0, 0)
-        if len(last_lines) >= self.height:
-            display_backward(last_lines, self.height, 0)
-            y -= len(last_lines) - self.height
+        text_num_lines = self.height - 1
+        if len(last_lines) >= text_num_lines:
+            display_backward(last_lines, text_num_lines, 0)
+            y -= len(last_lines) - text_num_lines
         else:
-            rest_num = self.height - len(last_lines)
+            rest_num = text_num_lines - len(last_lines)
             next_lineno = display_backward(self.history_buf, rest_num, 0)
             display_backward(last_lines, len(last_lines), next_lineno)
             y += next_lineno
+        self.window.move(text_num_lines, 0)
+        display_line('*** COMMAND MODE *** [("Ctrl-V": enter view mode)]')
         self.window.move(y, x)
 
     def addch(self, ch):
@@ -582,6 +589,7 @@ class ViewMode(BaseMode):
 
         def key_map(key_code):
             m = {
+                ctrlc('c'): ord('q'),
             }
             try:
                 return m[key_code]
@@ -599,6 +607,7 @@ class ViewMode(BaseMode):
             except KeyError:
                 return scr.ctrl_unknown
 
+        key_code = key_map(key_code)
         get_ctrl_handlers(self, key_code)()
 
     def ctrl_change_to_command_mode(self):
@@ -619,16 +628,16 @@ class ViewMode(BaseMode):
     def refresh(self):
         self.window.clear()
         num_lines = self.num_text_lines()
-        start_lineno = len(self.text_buf) - num_lines
-        start_lineno -= self.offset
-        if start_lineno < 0:
-            start_lineno = 0
-        for i in xrange(start_lineno, start_lineno + num_lines):
+        start_lineno = max(len(self.text_buf) - num_lines - self.offset, 0)
+        end_lineno = min(start_lineno + num_lines, len(self.text_buf))
+        for i in xrange(start_lineno, end_lineno):
             line = self.text_buf[i]
             self.window.move(i - start_lineno, 0)
             self.window.addnstr(line, self.width)
         self.window.move(num_lines, 0)
-        self.window.addnstr('*** VIEW MODE ***', self.width)
+        self.window.addnstr(
+            '*** VIEW MODE *** [("j":down) ("k":up) ("q" or "Ctrl-C":quit)]',
+            self.width)
 
 
 def curses_wrapper(proc, *args, **kwargs):
@@ -657,6 +666,7 @@ def curses_wrapper(proc, *args, **kwargs):
 def driver_loop(get_prompt, interpreter):
 
     def main_loop(stdscr):
+        # Go~
         terminal = TiTerminal(stdscr, get_prompt, interpreter)
         while not terminal.isclosed():
             terminal.refresh()
@@ -672,7 +682,9 @@ def driver_loop(get_prompt, interpreter):
                 # whose code is -1 remains in the keyboard input buffer.
                 # So I have to call getch() again to clear the -1 character
                 # and call ungetch(ctrlc('c')) to help curses catch Ctrl-C.
-                stdscr.getch()  # This will return -1.
+                # stdscr.getch()  # This will return -1.
+                curses.flushinp()  # Flush all input buffers.
                 curses.ungetch(ctrlc('c'))
+        terminal.close()
 
     curses_wrapper(main_loop)

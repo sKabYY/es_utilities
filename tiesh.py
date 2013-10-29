@@ -9,13 +9,15 @@ from interp.interp import driver_loop
 def input_prompt():
     return '%s > ' % prompt()
 
-global_env = setup_ties_environment()
 
-import sys
-if len(sys.argv) > 1:
-    from interp.tilib import dofile
-    fns = sys.argv[1:]
-    for fn in fns:
-        dofile(fn, global_env)
+def newenv():
+    global_env = setup_ties_environment()
+    import sys
+    if len(sys.argv) > 1:
+        from interp.tilib import dofile
+        fns = sys.argv[1:]
+        for fn in fns:
+            dofile(fn, global_env)
+    return global_env
 
-driver_loop(global_env, input_prompt)
+driver_loop(newenv, input_prompt)

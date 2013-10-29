@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import readline
 
 from tilib import (
     InterpError, setup_environment,
@@ -23,6 +24,7 @@ class Interpreter(object):
 
 
 def driver_loop(newenv, get_prompt):
+    readline.parse_and_bind('tab: complete')
     interpreter = Interpreter(dostring, newenv)
     while True:
         try:

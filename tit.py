@@ -16,5 +16,5 @@ def setup_tit_environment():
             dofile(fn, global_env)
     return global_env
 
-driver_loop(lambda: '%s > ' % prompt(),
+driver_loop(lambda: '%s\n> ' % prompt(),
             Interpreter(dostring, setup_tit_environment))

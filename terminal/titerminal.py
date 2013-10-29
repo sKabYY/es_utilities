@@ -427,7 +427,7 @@ class CommandMode(BaseMode):
             display_backward(last_lines, len(last_lines), next_lineno)
             y += next_lineno
         self.window.move(text_num_lines, 0)
-        display_line('*** COMMAND MODE *** [("Ctrl-V": enter view mode)]')
+        display_line('*** COMMAND MODE *** ["Ctrl-V": enter view mode]')
         self.window.move(y, x)
 
     def addch(self, ch):
@@ -572,10 +572,13 @@ class ViewMode(BaseMode):
     def num_text_lines(self):
         return self.height - 1
 
-    def adjust_offset(self):
+    def max_offset(self):
         max_offset = len(self.text_buf) - self.num_text_lines()
-        if max_offset < 0:
-            max_offset = 0
+        max_offset = max(max_offset, 0)
+        return max_offset
+
+    def adjust_offset(self):
+        max_offset = self.max_offset()
         if self.offset < 0:
             self.offset = 0
         elif self.offset > max_offset:
@@ -590,6 +593,10 @@ class ViewMode(BaseMode):
         def key_map(key_code):
             m = {
                 ctrlc('c'): ord('q'),
+                curses.KEY_NPAGE: ctrlc('f'),
+                curses.KEY_PPAGE: ctrlc('b'),
+                curses.KEY_HOME: ord('g'),
+                curses.KEY_END: ord('G'),
             }
             try:
                 return m[key_code]
@@ -601,6 +608,10 @@ class ViewMode(BaseMode):
                 ord('q'): scr.ctrl_change_to_command_mode,
                 ord('j'): scr.ctrl_move_down,
                 ord('k'): scr.ctrl_move_up,
+                ctrlc('f'): scr.ctrl_page_down,
+                ctrlc('b'): scr.ctrl_page_up,
+                ord('g'): scr.ctrl_goto_start,
+                ord('G'): scr.ctrl_goto_end,
             }
             try:
                 return m[key_code]
@@ -625,6 +636,18 @@ class ViewMode(BaseMode):
     def ctrl_move_up(self):
         self.set_offset(self.offset + 1)
 
+    def ctrl_page_down(self):
+        self.set_offset(self.offset - self.num_text_lines())
+
+    def ctrl_page_up(self):
+        self.set_offset(self.offset + self.num_text_lines())
+
+    def ctrl_goto_start(self):
+        self.set_offset(self.max_offset())
+
+    def ctrl_goto_end(self):
+        self.set_offset(0)
+
     def refresh(self):
         self.window.clear()
         num_lines = self.num_text_lines()
@@ -635,8 +658,14 @@ class ViewMode(BaseMode):
             self.window.move(i - start_lineno, 0)
             self.window.addnstr(line, self.width)
         self.window.move(num_lines, 0)
+        max_offset = self.max_offset()
         self.window.addnstr(
-            '*** VIEW MODE *** [("j":down) ("k":up) ("q" or "Ctrl-C":quit)]',
+            '%s [%s] %d/%d' % (
+                '* VIEW MODE *',
+                '"q" or "Ctrl-C":enter command mode',
+                max_offset - self.offset + 1,
+                max_offset + 1,
+            ),
             self.width)
 
 

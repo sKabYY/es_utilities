@@ -58,6 +58,10 @@ KW = enum(
     key_mapper=lambda s: s.upper())
 
 
+def keywords():
+    return set(KW.values())
+
+
 class InterpError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
@@ -103,6 +107,12 @@ class Env(object):
         for i in xrange(n):
             new_env.put(symbols[i], values[i])
         return new_env
+
+    def symbols(self):
+        s = set(self.current_env.keys())
+        if self.enclosing_env:
+            s |= self.enclosing_env.symbols()
+        return s
 
 
 #######################################################################

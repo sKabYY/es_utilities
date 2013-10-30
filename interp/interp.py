@@ -4,6 +4,7 @@ import sys
 import readline
 
 from tilib import (
+    keywords,
     InterpError, setup_environment,
     isvoid, tostring, dostring,
     dofile
@@ -25,6 +26,12 @@ class Interpreter(object):
         self.__eval = _eval
         self.__newenv = newenv
         self.reset()
+
+    def get_env(self):
+        try:
+            return self.__global_env
+        except AttributeError:
+            return None
 
     def reset(self):
         self.__global_env = self.__newenv()
@@ -49,9 +56,38 @@ def newenv_with_preload(newenv, fns):
     return __new_newenv
 
 
+def rlcompleter(get_env):
+    '''
+    TODO: Rewrite!
+    '''
+
+    def complete(text, state):
+        all_symbols = list(keywords() | get_env().symbols())
+        try:
+            last_expr = text.rsplit('(', 1)[-1]
+            tokens = last_expr.split()
+            if len(tokens) == 1:
+                text = tokens[0]
+            elif len(tokens) == 0:
+                text = ''
+            else:
+                return
+        except:
+            return
+        for symbol in all_symbols:
+            if symbol.startswith(text):
+                if state == 0:
+                    return symbol
+                else:
+                    state -= 1
+
+    return complete
+
+
 def driver_loop(newenv, get_prompt):
     readline.parse_and_bind('tab: complete')
     interpreter = Interpreter(dostring, newenv)
+    readline.set_completer(rlcompleter(interpreter.get_env))
     while True:
         try:
             try:

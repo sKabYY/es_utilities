@@ -9,8 +9,8 @@ from interp.interp import newenv_with_preload, driver_loop
 
 
 def green(s):
-    GREEN = '\033[92m'
-    ENDC = '\033[0m'
+    GREEN = '\001\033[92m\002'
+    ENDC = '\001\033[0m\002'
     return '%s%s%s' % (GREEN, s, ENDC)
 
 

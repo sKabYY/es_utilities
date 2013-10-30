@@ -63,21 +63,28 @@ def rlcompleter(get_env):
 
     def complete(text, state):
         all_symbols = list(keywords() | get_env().symbols())
-        try:
-            last_expr = text.rsplit('(', 1)[-1]
-            tokens = last_expr.split()
-            if len(tokens) == 1:
-                text = tokens[0]
-            elif len(tokens) == 0:
-                text = ''
-            else:
-                return
-        except:
+        seps = text.rsplit('(', 1)
+        if len(seps) == 1:
+            last_expr = seps[0]
+            prefix = None
+        elif len(seps) == 2:
+            prefix, last_expr = seps
+        else:
+            return
+        tokens = last_expr.split()
+        if len(tokens) == 1:
+            text = tokens[0]
+        elif len(tokens) == 0:
+            text = ''
+        else:
             return
         for symbol in all_symbols:
             if symbol.startswith(text):
                 if state == 0:
-                    return symbol
+                    if prefix is None:
+                        return symbol
+                    else:
+                        return '%s(%s' % (prefix, symbol)
                 else:
                     state -= 1
 
@@ -86,6 +93,7 @@ def rlcompleter(get_env):
 
 def driver_loop(newenv, get_prompt):
     readline.parse_and_bind('tab: complete')
+    readline.set_completer_delims('')
     interpreter = Interpreter(dostring, newenv)
     readline.set_completer(rlcompleter(interpreter.get_env))
     while True:

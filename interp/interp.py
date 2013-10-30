@@ -12,6 +12,16 @@ from tilib import (
 
 class Interpreter(object):
     def __init__(self, _eval, newenv):
+        '''
+        <newenv> is a function which takes no arguments and
+        returns an environment. The environment returned
+        by <newenv> will be used as the global environment.
+        Q: Why this class needs a function instead of
+           an Env instance?
+        A: The global environment may be changed and
+           in some cases, the interpreter may need to reset the environment.
+           So, function <newenv> can be used to get a new global environment.
+        '''
         self.__eval = _eval
         self.__newenv = newenv
         self.reset()
@@ -21,6 +31,22 @@ class Interpreter(object):
 
     def eval(self, code):
         return self.__eval(code, self.__global_env)
+
+
+def newenv_with_preload(newenv, fns):
+    '''
+    Return a function which will returns initialized environment
+    '''
+    def __new_newenv():
+        '''
+        This function uses <newenv> to get a new environment and then
+        loads files for each whose filename is in <fns>.
+        '''
+        env = newenv()
+        for fn in fns:
+            dofile(fn, env)
+        return env
+    return __new_newenv
 
 
 def driver_loop(newenv, get_prompt):

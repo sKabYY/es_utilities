@@ -1,23 +1,21 @@
 #!/usr/bin/env python
 
+import sys
+
 from tieslib.tieslib import (
     prompt, setup_ties_environment
 )
-from interp.interp import driver_loop
+from interp.interp import newenv_with_preload, driver_loop
+
+
+def green(s):
+    GREEN = '\033[92m'
+    ENDC = '\033[0m'
+    return '%s%s%s' % (GREEN, s, ENDC)
 
 
 def input_prompt():
-    return '%s > ' % prompt()
+    return green('%s\n> ' % prompt())
 
-
-def newenv():
-    global_env = setup_ties_environment()
-    import sys
-    if len(sys.argv) > 1:
-        from interp.tilib import dofile
-        fns = sys.argv[1:]
-        for fn in fns:
-            dofile(fn, global_env)
-    return global_env
-
+newenv = newenv_with_preload(setup_ties_environment, sys.argv[1:])
 driver_loop(newenv, input_prompt)

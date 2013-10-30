@@ -11,7 +11,7 @@ from translator.post_process import (
     hits_sources, facet_terms, facet_entries,
 )
 from interp.tilib import (
-    le2nd, eq2nd, inrange,
+    ge2nd, le2nd, eq2nd, inrange,
     setup_environment,
 )
 from interp.titype import (
@@ -184,8 +184,8 @@ def ties_primitive_procedures():
         ('Equal', Equal, eq2nd(2)),
         ('Range', Range, eq2nd(3)),
         ('Prefix', Prefix, eq2nd(2)),
-        ('And', lambda *conds: And(conds), le2nd(1)),
-        ('Or', lambda *conds: Or(conds), le2nd(1)),
+        ('And', lambda *conds: And(conds), ge2nd(1)),
+        ('Or', lambda *conds: Or(conds), ge2nd(1)),
         ('Not', Not, eq2nd(1)),
         # translate and search
         ('translate-hits', translate_hits, le2nd(4)),

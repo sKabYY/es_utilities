@@ -27,6 +27,7 @@ __global_doc_type = mkvoid()
 
 
 def connect(url, port):
+    r'''(connect url port): <url> and <port> are strings.'''
     global __global_url
     global __global_port
     __global_url = url
@@ -35,22 +36,26 @@ def connect(url, port):
 
 
 def set_index(index):
+    r'''(set-index! index): <index> is a string.'''
     global __global_index
     __global_index = index
     return mkvoid()
 
 
 def get_index():
+    r'''(get-index): Returns the index currently in use.'''
     return __global_index
 
 
 def set_doc_type(doc_type):
+    r'''(set-doc-type! doc-type): <doc-type> is a string.'''
     global __global_doc_type
     __global_doc_type = doc_type
     return mkvoid()
 
 
 def get_doc_type():
+    r'''(get-doc-type): Returns the doc type currently in use.'''
     return __global_doc_type
 
 
@@ -100,9 +105,7 @@ def add_default(args, default_list):
 
 
 def translate_hits(*args):
-    '''
-    args: [size, fields, conditions, sort]
-    '''
+    r'''args: [size, fields, conditions, sort]'''
     size, fields, conditions, sort = add_default(args, [10, [], [], None])
     h = Hits(size, fields,  None, sort)
     post_data = translate_wrapper(h, [], conditions)
@@ -118,9 +121,7 @@ __GLOBAL_TERMS_TAGS = '__terms__'
 
 
 def translate_terms(*args):
-    '''
-    args: [field, size, conditions]
-    '''
+    r'''args: [field, size, conditions]'''
     field, size, conditions = add_default(args, [None, 10, []])
     t = Terms(__GLOBAL_TERMS_TAGS, field, size)
     post_data = translate_wrapper(Hits(0), [t], conditions)
@@ -136,9 +137,7 @@ __GLOBAL_HISTOGRAM_TAGS = '__histogram__'
 
 
 def translate_histogram(*args):
-    '''
-    args: [timestamp_field, interval, conditions]
-    '''
+    r'''args: [timestamp_field, interval, conditions]'''
     ts_field, interval, conditions = add_default(args, [None, 'hour', []])
     h = Histogram(__GLOBAL_HISTOGRAM_TAGS, ts_field, interval)
     post_data = translate_wrapper(Hits(0), [h], conditions)
@@ -158,14 +157,17 @@ from datetime import timedelta
 
 
 def now():
+    r'''(now): Returns current datetime in UTC timezone.'''
     return tt.get_now()
 
 
 def hours(n):
+    r'''(hours n): Returns timedelta(hours=n).'''
     return timedelta(hours=n)
 
 
 def days(n):
+    r'''(days n): Returns timedelta(days=n).'''
     return timedelta(days=n)
 
 

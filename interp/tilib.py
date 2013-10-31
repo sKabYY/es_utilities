@@ -432,6 +432,8 @@ def primitive_procedures():
         ('*', number_multiply, _any),
         ('/', number_divide, ge2nd(1)),
         ('%', number_remainder, eq2nd(2)),
+        ('quotient', number_divide, ge2nd(1)),
+        ('remainder', number_remainder, eq2nd(2)),
         ('=', equal, eq2nd(2)),
         ('<', lt, eq2nd(2)),
         ('<=', le, eq2nd(2)),
@@ -490,7 +492,7 @@ def todoc(v):
     if isprimitive(v) and v.operation.__doc__ is not None:
         text = v.operation.__doc__
         lines = text.split('\n')
-        formatted_text = '\n'.join(map(lambda s: '  ' + s, lines))
+        formatted_text = '\n'.join(map(lambda s: '    ' + s, lines))
         return '%s:\n%s\n' % (tostring(v), formatted_text)
     else:
         return tostring(v)

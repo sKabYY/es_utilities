@@ -1,5 +1,4 @@
-A Lisp-style Shell
-May be used later...
+A Lisp-style interpreter
 
 Ti
 

@@ -1,3 +1,5 @@
 (connect! "localhost" "9200")
 (set-index! "testdb")
-(set-doc-type! "testtest")
+(set-doc-type! "testdiff")
+(define (type1) (set-doc-type! "testtest"))
+(define (type2) (set-doc-type! "testdiff"))

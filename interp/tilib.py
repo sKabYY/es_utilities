@@ -123,7 +123,8 @@ def make_procedure(arg_tokens, body):
     check_error(
         type(arg_tokens) == list and reduce(
             lambda x, y: x and y,
-            map(is_variable, arg_tokens)))
+            map(is_variable, arg_tokens),
+            True))
     args = map(lambda a: a.value, arg_tokens)
     proc = analyze(body)
     return lambda env: mkcompound(args, proc, env)

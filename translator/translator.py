@@ -163,7 +163,7 @@ class Hits(ESQueryType):
             field = sort[0]
             reverse = sort[1]
             if reverse:
-                dire = 'dsc'
+                dire = 'desc'
             else:
                 dire = 'asc'
             d = {}

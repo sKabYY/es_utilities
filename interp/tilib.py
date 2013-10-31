@@ -248,7 +248,8 @@ def analyze_application(exp):
 
 def apply_primitive(proc, args):
     check_error(proc.argc(len(args)),
-                '%s: incorrect argument count' % tostring(proc))
+                '%s: incorrect argument count (Need: %s. Given: %s.)' % (
+                    tostring(proc), proc.argc.__doc__, len(args)))
     return apply(proc.operation, args)
 
 
@@ -369,31 +370,36 @@ def ge(a, b):
     return mkboolean(a >= b)
 
 
-def bind2nd(func, b):
-    return lambda a: func(a, b)
+def bind2nd(func, b, desc=None):
+    f = lambda a: func(a, b)
+    f.__doc__ = desc
+    return f
 
 
 def le2nd(a):
     r'#args <= a'
-    return bind2nd(le, a)
+    return bind2nd(le, a, '<= %s' % a)
 
 
 def ge2nd(a):
     r'#args >= a'
-    return bind2nd(ge, a)
+    return bind2nd(ge, a, '>= %s' % a)
 
 
 def eq2nd(a):
-    r'args == a'
-    return bind2nd(equal, a)
+    r'#args == a'
+    return bind2nd(equal, a, '= %s' % a)
 
 
 def inrange(a, b):
-    r'a <= args <= b'
-    return lambda x: a <= x <= b
+    r'a <= #args <= b'
+    f = lambda x: a <= x <= b
+    f.__doc__ = '%s <= #args <= %s' % (a, b)
+    return f
 
 
 def _any(a):
+    r'This doc will never be shown.'
     return True
 
 

@@ -69,20 +69,6 @@ def prompt():
         return '%s/%s' % (p, __global_doc_type)
 
 
-def es_search(post_data):
-    es = ES.Elasticsearch([{
-        'host': __global_url,
-        'post': __global_port,
-    }])
-    kwargs = {
-        'index': __global_index,
-        'body': post_data,
-    }
-    if not isvoid(__global_doc_type):
-        kwargs['doc_type'] = __global_doc_type
-    return _format(es.search(**kwargs))
-
-
 def translate_wrapper(hits, facets, conditions):
     if not isinstance(conditions, list):
         conditions = [conditions]
@@ -102,6 +88,23 @@ def add_default(args, default_list):
 
 
 # functions for elasticsearch #############################
+
+
+def es_search(post_data):
+    r'''(es_search post_data):
+<post_data> is a translated data.
+This function returns the origin response'''
+    es = ES.Elasticsearch([{
+        'host': __global_url,
+        'post': __global_port,
+    }])
+    kwargs = {
+        'index': __global_index,
+        'body': post_data,
+    }
+    if not isvoid(__global_doc_type):
+        kwargs['doc_type'] = __global_doc_type
+    return _format(es.search(**kwargs))
 
 
 def translate_hits(*args):
@@ -190,6 +193,7 @@ def ties_primitive_procedures():
         ('Or', lambda *conds: Or(conds), ge2nd(1)),
         ('Not', Not, eq2nd(1)),
         # translate and search
+        ('origin-search', es_search, eq2nd(1)),
         ('translate-hits', translate_hits, le2nd(4)),
         ('search-hits', search_hits, le2nd(4)),
         ('translate-terms', translate_terms, inrange(1, 4)),

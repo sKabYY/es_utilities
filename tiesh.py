@@ -8,14 +8,14 @@ from tieslib.tieslib import (
 from interp.interp import newenv_with_preload, driver_loop
 
 
-def green(s):
-    GREEN = '\001\033[92m\002'
+def yellow(s):
+    YELLOW = '\001\033[93m\002'
     ENDC = '\001\033[0m\002'
-    return '%s%s%s' % (GREEN, s, ENDC)
+    return '%s%s%s' % (YELLOW, s, ENDC)
 
 
 def input_prompt():
-    return green('%s\n> ' % prompt())
+    return yellow('%s\n> ' % prompt())
 
 newenv = newenv_with_preload(setup_ties_environment, sys.argv[1:])
 driver_loop(newenv, input_prompt)

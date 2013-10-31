@@ -176,6 +176,30 @@ def isnil(var):
     identical(var, mknil())
 
 
+def listdo_length(seq):
+    return len(seq)
+
+
+def listdo_append(a, b):
+    res = mklist(*a)
+    res.extend(b)
+    return res
+
+
+def listdo_cons(a, seq):
+    res = mklist(*seq)
+    res.insert(0, a)
+    return res
+
+
+def listdo_car(seq):
+    return seq[0]
+
+
+def listdo_cdr(seq):
+    return seq[1:]
+
+
 # table ###################################################
 # use the dict in python
 

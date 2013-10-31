@@ -9,13 +9,14 @@ from scanner import LPAREN, RPAREN, VARIABLE, NUMBER, STRING
 
 from titype import (
     mkvoid, isvoid,
-    mknil,
+    mknil, isnil,
     mktrue, istrue, idtrue, mkboolean,
     mkfalse, idfalse,
     isstring,
     mkprimitive, isprimitive,
     mkcompound, iscompound,
     mklist, islist,
+    listdo_append, listdo_cons, listdo_car, listdo_cdr,
     istable,
 )
 
@@ -421,6 +422,29 @@ def _help(*args):
         return todoc(datum)
 
 
+def append(a, b):
+    check_error(islist(a))
+    check_error(islist(b))
+    return listdo_append(a, b)
+
+
+def cons(a, seq):
+    check_error(islist(seq))
+    return listdo_cons(a, seq)
+
+
+def car(seq):
+    check_error(islist(seq))
+    check_error(not isnil(seq))
+    return listdo_car(seq)
+
+
+def cdr(seq):
+    check_error(islist(seq))
+    check_error(not isnil(seq))
+    return listdo_cdr(seq)
+
+
 def primitive_procedures():
     PM = [
         ('void', mkvoid, eq2nd(0)),
@@ -440,6 +464,9 @@ def primitive_procedures():
         ('>', gt, eq2nd(2)),
         ('>=', ge, eq2nd(2)),
         ('list', mklist, _any),
+        ('cons', cons, eq2nd(2)),
+        ('car', car, eq2nd(1)),
+        ('cdr', cdr, eq2nd(1)),
     ]
     return map(lambda (s, b, a): (s, mkprimitive(s, a, b)), PM)
 

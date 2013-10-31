@@ -21,8 +21,10 @@ I write this interpreter according SICP.
 So this interpreter does not optimize tail recursion since python does not.
 
 example:
-> (define (iter a) (if (= a 0) 0 (iter (- a 1))))
-> 
-> (iter 1000)
+
+```scheme
+(define (iter a) (if (= a 0) 0 (iter (- a 1))))
+(iter 1000)
+```
 
 This example will end up a "RuntimeError: maximum recursion depth exceeded" exception.

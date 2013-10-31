@@ -7,6 +7,15 @@ def _format(origin_data):
     return Table(origin_data)
 
 
+def hits_additional_info(formatted_data):
+    '''
+    total
+    '''
+    addi = Table()
+    addi.total = formatted_data.hits.total
+    return addi
+
+
 def hits_sources(formatted_data):
     '''
         return formatted_data['hits']['hits']['_source']
@@ -21,6 +30,19 @@ def hits_sources(formatted_data):
             return doc.fields
 
     return map(get_source_or_fields, formatted_data.hits.hits)
+
+
+def facet_terms_additional_info(name, formatted_data):
+    '''
+    total
+    other
+    missing
+    '''
+    addi = Table()
+    addi.total = formatted_data.facets[name].total
+    addi.other = formatted_data.facets[name].other
+    addi.missing = formatted_data.facets[name].missing
+    return addi
 
 
 def facet_terms(name, formatted_data):

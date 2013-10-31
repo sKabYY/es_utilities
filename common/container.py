@@ -16,7 +16,7 @@ class Table(dict):
         if isinstance(data, dict):
             for k, v in data.iteritems():
                 self[k] = construct(v)
-        else:
+        elif data is not None:
             raise TypeError(
                 'Expect data to be a dict but found %s' % type(data))
 

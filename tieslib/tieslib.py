@@ -8,7 +8,9 @@ from translator.translator import (
 )
 from translator.post_process import (
     _format,
-    hits_sources, facet_terms, facet_entries,
+    hits_additional_info, hits_sources,
+    facet_terms_additional_info, facet_terms,
+    facet_entries,
 )
 from interp.tilib import (
     ge2nd, le2nd, eq2nd, inrange,
@@ -87,6 +89,28 @@ def add_default(args, default_list):
     return res
 
 
+# response types ##########################################
+import pprint
+
+
+class ResponseList(list):
+    def __init__(self, initdata, additional_info=None):
+        r'''
+        <initdata> is a list-like object (an iterable) and
+        <additional> is a Table.
+        '''
+        self.extend(initdata)
+        self.additional_info = additional_info
+
+    def __str__(self):
+        data_str = pprint.pformat(self)
+        if self.additional_info is None:
+            return data_str
+        else:
+            addi_str = pprint.pformat(self.additional_info)
+            return '%s\n\nAdditional info:\n%s' % (data_str, addi_str)
+
+
 # functions for elasticsearch #############################
 
 
@@ -116,8 +140,10 @@ def translate_hits(*args):
 
 
 def search_hits(*args):
-    post_data = translate_hits(*args)
-    return hits_sources(es_search(post_data))
+    orig = es_search(translate_hits(*args))
+    data = hits_sources(orig)
+    addi = hits_additional_info(orig)
+    return ResponseList(data, addi)
 
 
 __GLOBAL_TERMS_TAGS = '__terms__'
@@ -132,8 +158,10 @@ def translate_terms(*args):
 
 
 def search_terms(*args):
-    post_data = translate_terms(*args)
-    return facet_terms(__GLOBAL_TERMS_TAGS, es_search(post_data))
+    orig = es_search(translate_terms(*args))
+    data = facet_terms(__GLOBAL_TERMS_TAGS, orig)
+    addi = facet_terms_additional_info(__GLOBAL_TERMS_TAGS, orig)
+    return ResponseList(data, addi)
 
 
 __GLOBAL_HISTOGRAM_TAGS = '__histogram__'
@@ -148,8 +176,10 @@ def translate_histogram(*args):
 
 
 def search_histogram(*args):
-    post_data = translate_histogram(*args)
-    return facet_entries(__GLOBAL_HISTOGRAM_TAGS, es_search(post_data))
+    orig = es_search(translate_histogram(*args))
+    data = facet_entries(__GLOBAL_HISTOGRAM_TAGS, orig)
+    # histogram has no additional info
+    return ResponseList(data)
 
 
 # functions of datetime ###################################

@@ -165,7 +165,8 @@ Make a list of <a>s.'''
 
 
 def islist(var):
-    return isinstance(var, list)
+    # Cannot use isinstance(var, list)!!
+    return type(var) == list
 
 
 def mknil():
@@ -209,4 +210,4 @@ def mktable():
 
 
 def istable(var):
-    return isinstance(var, dict)
+    return isinstance(var, dict)  # TODO

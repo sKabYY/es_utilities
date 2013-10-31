@@ -38,4 +38,7 @@ atexit.register(write_history)
 ###########################################################
 
 newenv = newenv_with_preload(setup_ties_environment, sys.argv[1:])
+print 'TiES Interpreter Version 0.0'
+print 'Copyleft (c) balabala'
+print
 driver_loop(newenv, input_prompt)

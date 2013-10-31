@@ -128,6 +128,9 @@ def driver_loop(newenv, get_prompt):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
+        print 'Ti Interpreter Version 0.0'
+        print 'Copyleft (c) balabala'
+        print
         driver_loop(setup_environment, lambda: '> ')
     else:
         dofile(sys.argv[1], setup_environment())  # TODO

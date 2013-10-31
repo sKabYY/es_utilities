@@ -16,7 +16,7 @@ Buildin Types
 
 A bug
 ------
-I write this interpreter according SICP.
+I wrote this interpreter according SICP.
 So this interpreter does not optimize tail recursion since python does not.
 
 example:
@@ -27,3 +27,5 @@ example:
 ```
 
 This example will end up a "RuntimeError: maximum recursion depth exceeded" exception.
+
+This interpreter is used for querying elasticsearch instead of complex computing. The above case will rarely happen. So I may not fix this bug.

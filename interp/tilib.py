@@ -55,8 +55,8 @@ KW = enum(
     'if',
     'cond',
     'lambda',
-    'and',
-    'or',
+    #'and',  TODO
+    #'or',
     key_mapper=lambda s: s.upper())
 
 
@@ -120,14 +120,18 @@ class Env(object):
 #######################################################################
 
 
-def make_procedure(arg_tokens, body):
+def make_procedure(arg_tokens, exps):
     check_error(
         type(arg_tokens) == list and reduce(
             lambda x, y: x and y,
             map(is_variable, arg_tokens),
             True))
     args = map(lambda a: a.value, arg_tokens)
-    proc = analyze(body)
+    check_error(len(exps) > 0)
+    if len(exps) == 1:
+        proc = analyze(exps[0])
+    else:
+        proc = analyze_seq(exps)
     return lambda env: mkcompound(args, proc, env)
 
 
@@ -169,20 +173,29 @@ def env_put(env, symbol, value):
 
 
 # Two types of define:
-#   1, (define (f x) x)
-#   2, (define a 1.0) or (define f (lambda (x) x))
+#   1, (define (f x) exps[x])
+#   2, (define a 1.0) or (define f (lambda (x) exps[x]))
 def analyze_define(exp):
-    check_error(len(exp) == 3)
+    check_error(len(exp) >= 3)
     if type(exp[1]) == list:
         subexp = exp[1]
         check_error(len(subexp) > 0 and is_variable(subexp[0]))
         arguments = subexp[1:]
-        proc = make_procedure(arguments, exp[2])
+        proc = make_procedure(arguments, exp[2:])
         return lambda env: env_put(env, subexp[0].value, proc(env))
     else:
+        check_error(len(exp) == 3)
         check_error(is_variable(exp[1]))
         proc = analyze(exp[2])
         return lambda env: env_put(env, exp[1].value, proc(env))
+
+
+def is_begin(exp):
+    return is_tagged_list(exp, KW.BEGIN)
+
+
+def analyze_begin(exp):
+    return analyze_seq(exp[1:])
 
 
 def is_load(exp):
@@ -232,8 +245,8 @@ def is_lambda(exp):
 
 
 def analyze_lambda(exp):
-    check_error(len(exp) == 3)
-    return make_procedure(exp[1], exp[2])
+    check_error(len(exp) >= 3)
+    return make_procedure(exp[1], exp[2:])
 
 
 def is_application(exp):
@@ -262,6 +275,18 @@ def apply_compound(proc, args):
     return proc.body(ext_env)
 
 
+def analyze_seq(exps):
+    analyzed_exps = map(analyze, exps)
+
+    def eval_analyzed_exps(env):
+        res = mkvoid()
+        for aexp in analyzed_exps:
+            res = aexp(env)
+        return res
+
+    return eval_analyzed_exps
+
+
 def analyze(exp):
     if is_self_evaluating(exp):
         return lambda env: exp.value
@@ -269,6 +294,8 @@ def analyze(exp):
         return lambda env: env.lookup(exp.value)
     elif is_definition(exp):
         return analyze_define(exp)
+    elif is_begin(exp):
+        return analyze_begin(exp)
     elif is_load(exp):
         return analyze_load(exp)
     elif is_if(exp):

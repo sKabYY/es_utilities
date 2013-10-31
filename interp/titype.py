@@ -159,6 +159,8 @@ def isprocedure(var):
 
 
 def mklist(*args):
+    r'''(list a ...):
+Make a list of <a>s.'''
     return list(args)
 
 

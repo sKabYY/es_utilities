@@ -62,7 +62,9 @@ def rlcompleter(get_env):
     '''
 
     def complete(text, state):
-        all_symbols = list(keywords() | get_env().symbols())
+        env_symbol_set = get_env().symbols()
+        all_symbols = list(keywords() | env_symbol_set)
+        env_symbols = list(env_symbol_set)
         seps = text.rsplit('(', 1)
         if len(seps) == 1:
             last_expr = seps[0]
@@ -80,6 +82,7 @@ def rlcompleter(get_env):
         else:
             if tokens[0] == 'help':  # help function
                 prefix += 'help '
+                all_symbols = env_symbols  # Do not search keywords.
                 if len(tokens) == 1:
                     text = ''
                 else:  # len(tokens) == 2

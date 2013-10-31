@@ -10,7 +10,7 @@ from scanner import LPAREN, RPAREN, VARIABLE, NUMBER, STRING
 from titype import (
     mkvoid, isvoid,
     mknil,
-    mktrue, istrue, idtrue,
+    mktrue, istrue, idtrue, mkboolean,
     mkfalse, idfalse,
     isstring,
     mkprimitive, isprimitive,
@@ -303,10 +303,13 @@ def _apply(proc, args):
 
 
 def number_add(*ns):
+    r'''(+ n ...): Returns the sum of the <n>s.'''
     return sum(ns)
 
 
 def number_minus(*ns):
+    r'''(- n): Returns (- 0 n).
+(- m n ...): Returns the subtraction of the <n>s from <m>.'''
     if len(ns) == 1:
         return -ns[0]
     elif len(ns) == 2:
@@ -322,10 +325,13 @@ def product(ns):
 
 
 def number_multiply(*ns):
+    r'''(* n ...): Returns the product of the <n>s.'''
     return product(ns)
 
 
 def number_divide(*ns):
+    r'''(/ n): Returns (/ 1 n).
+(/ m n ...): Returns the division of <m> by the <n>s.'''
     if len(ns) == 1:
         return 1. / ns[0]
     else:
@@ -333,27 +339,33 @@ def number_divide(*ns):
 
 
 def number_remainder(a, b):
+    r'''(% a b): Returns the remainder of <a> by <b>.'''
     return a % b
 
 
 def equal(a, b):
-    return a == b
+    r'''(= a b): Returns true if <a> == <b>.'''
+    return mkboolean(a == b)
 
 
 def lt(a, b):
-    return a < b
+    r'''(< a b): Returns true if <a> < <b>.'''
+    return mkboolean(a < b)
 
 
 def le(a, b):
-    return a <= b
+    r'''(<= a b): Returns true if <a> <= <b>.'''
+    return mkboolean(a <= b)
 
 
 def gt(a, b):
-    return a > b
+    r'''(> a b): Returns true if <a> > <b>.'''
+    return mkboolean(a > b)
 
 
 def ge(a, b):
-    return a >= b
+    r'''(>= a b): Returns true if <a> >= <b>.'''
+    return mkboolean(a >= b)
 
 
 def bind2nd(func, b):
@@ -392,6 +404,8 @@ Translate <datum> to string and print it.'''
 
 
 def _map(proc, seq):
+    r'''(map proc seq):
+Returns [<proc>(e) for e in <seq>]'''
     check_error(islist(seq))
     return map(lambda e: _apply(proc, mklist(e)), seq)
 
@@ -402,6 +416,8 @@ def _help(*args):
         return _help.__doc__
     else:  # len(args) == 1
         datum = args[0]
+        if is_help_procedure(datum):
+            return _help.__doc__
         return todoc(datum)
 
 
@@ -473,9 +489,11 @@ def tostring(v):
 def todoc(v):
     if isprimitive(v) and v.operation.__doc__ is not None:
         text = v.operation.__doc__
+        lines = text.split('\n')
+        formatted_text = '\n'.join(map(lambda s: '  ' + s, lines))
+        return '%s:\n%s\n' % (tostring(v), formatted_text)
     else:
-        text = mkvoid()
-    return '%s:\n\n%s\n' % (tostring(v), text)
+        return tostring(v)
 
 
 def dostring(src, env):

@@ -361,18 +361,22 @@ def bind2nd(func, b):
 
 
 def le2nd(a):
+    r'#args <= a'
     return bind2nd(le, a)
 
 
 def ge2nd(a):
+    r'#args >= a'
     return bind2nd(ge, a)
 
 
 def eq2nd(a):
+    r'args == a'
     return bind2nd(equal, a)
 
 
 def inrange(a, b):
+    r'a <= args <= b'
     return lambda x: a <= x <= b
 
 
@@ -381,6 +385,8 @@ def _any(a):
 
 
 def display(v):
+    r'''(display datum):
+Translate <datum> to string and print it.'''
     sys.stdout.write(tostring(v))
     return mkvoid()
 
@@ -390,9 +396,19 @@ def _map(proc, seq):
     return map(lambda e: _apply(proc, mklist(e)), seq)
 
 
+def _help(*args):
+    r'Type (help datum) for help about <datum>.'
+    if len(args) == 0:
+        return _help.__doc__
+    else:  # len(args) == 1
+        datum = args[0]
+        return todoc(datum)
+
+
 def primitive_procedures():
     PM = [
         ('void', mkvoid, eq2nd(0)),
+        ('help', _help, le2nd(1)),
         ('display', display, eq2nd(1)),
         ('map', _map, eq2nd(2)),
         ('+', number_add, _any),
@@ -425,9 +441,14 @@ def setup_environment():
     return global_env
 
 
+def is_help_procedure(v):
+    return isprimitive(v) and v.operation == _help
+
+
 import pprint
 __global_format_map = [
     (isvoid, lambda v: '#<void>'),
+    (is_help_procedure, lambda v: _help.__doc__),
     (idtrue, lambda v: 'true'),
     (idfalse, lambda v: 'false'),
     (isprimitive, lambda v: '#<procedure %s>' % v.name),
@@ -447,6 +468,14 @@ def tostring(v):
         if predicate(v):
             return tostr(v)
     return str(v)
+
+
+def todoc(v):
+    if isprimitive(v) and v.operation.__doc__ is not None:
+        text = v.operation.__doc__
+    else:
+        text = mkvoid()
+    return '%s:\n\n%s\n' % (tostring(v), text)
 
 
 def dostring(src, env):

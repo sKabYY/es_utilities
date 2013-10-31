@@ -66,25 +66,32 @@ def rlcompleter(get_env):
         seps = text.rsplit('(', 1)
         if len(seps) == 1:
             last_expr = seps[0]
-            prefix = None
+            prefix = ''
         elif len(seps) == 2:
             prefix, last_expr = seps
+            prefix += '('
         else:
             return
         tokens = last_expr.split()
-        if len(tokens) == 1:
-            text = tokens[0]
-        elif len(tokens) == 0:
+        if len(tokens) == 0:
             text = ''
-        else:
+        elif len(tokens) > 2:
             return
+        else:
+            if tokens[0] == 'help':  # help function
+                prefix += 'help '
+                if len(tokens) == 1:
+                    text = ''
+                else:  # len(tokens) == 2
+                    text = tokens[1]
+            elif len(tokens) == 1:
+                text = tokens[0]
+            else:
+                return
         for symbol in all_symbols:
             if symbol.startswith(text):
                 if state == 0:
-                    if prefix is None:
-                        return symbol
-                    else:
-                        return '%s(%s' % (prefix, symbol)
+                    return '%s%s' % (prefix, symbol)
                 else:
                     state -= 1
 

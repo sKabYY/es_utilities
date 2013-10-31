@@ -41,6 +41,7 @@ def __global_void():
 
 
 def mkvoid():
+    r'A function that returns #<void>'
     return __global_void
 
 

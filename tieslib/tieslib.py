@@ -18,6 +18,7 @@ from interp.tilib import (
 )
 from interp.titype import (
     mkvoid, isvoid,
+    mkfalse, istrue,
     mkprimitive,
 )
 
@@ -131,9 +132,9 @@ This function returns the origin response'''
     return _format(es.search(**kwargs))
 
 
-def Sort(field, reverse=False):
+def Sort(field, reverse=mkfalse()):
     r'''Used Only in translate-hits or search-hits'''
-    return (field, reverse)
+    return (field, istrue(reverse))
 
 
 def translate_hits(*args):

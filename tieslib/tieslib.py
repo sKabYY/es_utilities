@@ -131,6 +131,11 @@ This function returns the origin response'''
     return _format(es.search(**kwargs))
 
 
+def Sort(field, reverse=False):
+    r'''Used Only in translate-hits or search-hits'''
+    return (field, reverse)
+
+
 def translate_hits(*args):
     r'''args: [size, fields, conditions, sort]'''
     size, fields, conditions, sort = add_default(args, [10, [], [], None])
@@ -223,6 +228,7 @@ def ties_primitive_procedures():
         ('Or', lambda *conds: Or(conds), ge2nd(1)),
         ('Not', Not, eq2nd(1)),
         # translate and search
+        ('Sort', Sort, inrange(1, 2)),
         ('origin-search', es_search, eq2nd(1)),
         ('translate-hits', translate_hits, le2nd(4)),
         ('search-hits', search_hits, le2nd(4)),

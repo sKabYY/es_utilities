@@ -131,7 +131,7 @@ class Not(NotAtomCondition):
 ###########################################################
 
 
-# Response Type ###########################################
+# ESQuery Type ############################################
 class ESQueryType(object):
     def is_facet(self):
         return False
@@ -147,7 +147,8 @@ class Hits(ESQueryType):
             size: integer
             fields: list of string, optional, default all fields
             condition: Condition, optional
-            sort: dict{field: 'asc'/'dsc'}, optional
+            sort: a tuple with two elements,
+                  the first is a field and the other is a boolean, optional
         '''
         self.size = size
         self.fields = fields
@@ -158,6 +159,17 @@ class Hits(ESQueryType):
         return True
 
     def to_dict(self):
+        def sort_to_dict(sort):
+            field = sort[0]
+            reverse = sort[1]
+            if reverse:
+                dire = 'dsc'
+            else:
+                dire = 'asc'
+            d = {}
+            d[field] = dire
+            return d
+
         d = {}
         d['size'] = self.size
         if self.fields != []:
@@ -165,7 +177,7 @@ class Hits(ESQueryType):
         if self.condition is not None:
             d['filter'] = self.condition.to_dict()
         if self.sort is not None:
-            d['sort'] = self.sort
+            d['sort'] = sort_to_dict(self.sort)
         return d
 
 

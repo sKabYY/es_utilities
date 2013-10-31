@@ -50,6 +50,7 @@ def build_ast(text):
 #keywords
 KW = enum(
     'define',
+    'begin',
     'load',
     'if',
     'cond',

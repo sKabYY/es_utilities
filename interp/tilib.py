@@ -204,9 +204,10 @@ def is_load(exp):
 
 def analyze_load(exp):
     check_error(len(exp) == 2)
+    get_fn = analyze(exp[1])
 
     def load(env):
-        fn = _eval(exp[1], env)
+        fn = get_fn(env)
         check_error(isstring(fn))
         dofile(fn, env)
         return mkvoid()
@@ -311,14 +312,7 @@ def analyze(exp):
 
 
 def eval_seq(exps, env):
-    res = mkvoid()
-    for exp in exps:
-        res = _eval(exp, env)
-    return res
-
-
-def _eval(exp, env):
-    return analyze(exp)(env)
+    return analyze_seq(exps)(env)
 
 
 def _apply(proc, args):

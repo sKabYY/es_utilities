@@ -441,7 +441,7 @@ Returns [<proc>(e) for e in <seq>]'''
 
 
 def _help(*args):
-    r'Type (help datum) for help about <datum>.'
+    r'Type (help arg) for help about <arg>.'
     if len(args) == 0:
         return _help.__doc__
     else:  # len(args) == 1

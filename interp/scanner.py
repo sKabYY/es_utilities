@@ -7,6 +7,7 @@ LPAREN = 'LPAREN'
 RPAREN = 'RPAREN'
 NUMBER = 'NUMBER'
 STRING = 'STRING'
+QUOTE = 'QUOTE'
 VARIABLE = 'VARIABLE'
 
 tokens = (
@@ -14,6 +15,7 @@ tokens = (
     RPAREN,
     NUMBER,
     STRING,
+    QUOTE,
     VARIABLE,
 )
 
@@ -40,6 +42,9 @@ def t_STRING(t):
     r'"[^"]*"'
     t.value = t.value[1:-1]
     return t
+
+
+t_QUOTE = '\''
 
 
 def symbol_chars(ext):

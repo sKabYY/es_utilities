@@ -5,7 +5,7 @@ import sys
 from simpletable import SimpleTable, enum
 table = SimpleTable  # rename SimpleTable
 from scanner import Token
-from scanner import LPAREN, RPAREN, VARIABLE, NUMBER, STRING
+from scanner import LPAREN, RPAREN, VARIABLE, NUMBER, STRING, QUOTE
 
 from titype import (
     mkvoid, isvoid,
@@ -13,18 +13,22 @@ from titype import (
     mktrue, istrue, idtrue, mkboolean,
     mkfalse, idfalse,
     isstring,
+    mksymbol,
     mkprimitive, isprimitive,
     mkcompound, iscompound,
-    mklist, islist,
+    mklist, islist, list_tostring,
     listdo_append, listdo_cons, listdo_car, listdo_cdr,
-    istable,
+    istable, table_tostring,
 )
 
 
 def build_ast(text):
+    # scan
     from scanner import scanner
     tokens = scanner(text)
     num_tokens = len(tokens)
+
+    # build ast_tree
     token_tree = []
 
     def parse_start(start):
@@ -42,9 +46,41 @@ def build_ast(text):
                 i += 1
         return node, num_tokens
 
+    def is_all_rparen(start, end):
+        r'''
+        Returns whether all the tokens have type RPAREN in tokens[start:end]
+        '''
+        return all(map(
+            lambda i: tokens[i].type == RPAREN,
+            xrange(start, end)))
+
     token_tree, end = parse_start(0)
-    assert end == num_tokens
-    return token_tree
+    check_error(end == num_tokens or is_all_rparen(end, num_tokens),
+                "Syntax error: check the parentheses")
+
+    # deal with quote
+    def handle_quote(node):
+        if isinstance(node, list):
+            buf = []
+            n = len(node)
+            i = 0
+            while i < n:
+                t = node[i]
+                if not isinstance(t, list) and t.type == QUOTE:
+                    # make sure that quote is not the last element
+                    check_error(
+                        i < n - 1,
+                        "Syntaxe error: nothing follows quote")
+                    t.value = KW.QUOTE
+                    buf.append([t, node[i + 1]])
+                    i += 2
+                else:
+                    buf.append(handle_quote(t))
+                    i += 1
+            return buf
+        else:
+            return node
+    return handle_quote(token_tree)
 
 
 #keywords
@@ -55,6 +91,7 @@ KW = enum(
     'if',
     'cond',
     'lambda',
+    'quote',
     #'and',  TODO
     #'or',
     key_mapper=lambda s: s.upper())
@@ -159,8 +196,41 @@ def is_self_evaluating(exp):
     return is_token_in_types(exp, self_evaluating_types)  # TODO
 
 
+def eval_self(exp):
+    return exp.value
+
+
 def is_variable(exp):
     return is_token_type(exp, VARIABLE)
+
+
+def is_quote(exp):
+    return is_tagged_list(exp, KW.QUOTE)
+
+
+def eval_quote(exp):
+    assert len(exp) == 2, str(exp)
+    exp1 = exp[1]
+
+    def __eval(exp1):
+        if type(exp1) == list:
+            if is_quote(exp1):
+                return eval_quote(exp1)
+            else:
+                return mklist(*map(__eval, exp1))
+        elif is_self_evaluating(exp1):
+            return eval_self(exp1)
+        elif is_variable(exp1):
+            return mksymbol(exp1.value)
+        else:
+            raise_error("Unknown quote exp type: %s" % str(exp))
+
+    return __eval(exp1)
+
+
+def analyze_quote(exp):
+    value = eval_quote(exp)
+    return lambda env: value
 
 
 def is_definition(exp):
@@ -290,9 +360,11 @@ def analyze_seq(exps):
 
 def analyze(exp):
     if is_self_evaluating(exp):
-        return lambda env: exp.value
+        return lambda env: eval_self(exp)
     elif is_variable(exp):
         return lambda env: env.lookup(exp.value)
+    elif is_quote(exp):
+        return analyze_quote(exp)
     elif is_definition(exp):
         return analyze_define(exp)
     elif is_begin(exp):
@@ -519,7 +591,6 @@ def is_help_procedure(v):
     return isprimitive(v) and v.operation == _help
 
 
-import pprint
 __global_format_map = [
     (isvoid, lambda v: '#<void>'),
     (is_help_procedure, lambda v: _help.__doc__),
@@ -527,8 +598,8 @@ __global_format_map = [
     (idfalse, lambda v: 'false'),
     (isprimitive, lambda v: '#<procedure %s>' % v.name),
     (iscompound, lambda v: '#<procedure>'),
-    (islist, lambda v: pprint.pformat(v)),
-    (istable, lambda v: pprint.pformat(v)),
+    (islist, list_tostring),
+    (istable, table_tostring),
 ]
 
 

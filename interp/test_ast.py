@@ -7,6 +7,8 @@ text = '''
       (gcd (remainder b a) a)))
 (display "hehe")
 (display (gcd 144 12144))
+(display 'x)
+'x
 '''
 
 import tilib

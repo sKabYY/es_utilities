@@ -1,5 +1,7 @@
 #
 
+import pprint
+
 from simpletable import enum, SimpleTable
 table = SimpleTable
 
@@ -11,6 +13,7 @@ TYPE = enum(
     'STRING',
     'COMPOUND',
     'PRIMITIVE',
+    'SYMBOL',
     # mutable types
     'LIST',
     'TABLE',
@@ -117,6 +120,36 @@ def isstring(s):
     return isinstance(s, str)
 
 
+# symbol ##################################################
+
+
+class TiSymbol(TiType):
+    def __init__(self, v):
+        super(TiSymbol, self).__init__(TYPE.SYMBOL, content=v)
+
+    def __eq__(self, x):
+        return issymbol(x) and self.content == x.content
+
+    def __repr__(self):
+        if issymbol(self.content):
+            return '\'%s' % repr(self.content)
+        elif islist(self.content):
+            return list_tostring(self.content)
+        else:
+            return self.content
+
+    def __str__(self):
+        return repr(self)
+
+
+def mksymbol(s):
+    return TiSymbol(s)
+
+
+def issymbol(v):
+    return check_type(v, TYPE.SYMBOL)
+
+
 # procedure ###############################################
 
 # struct of compound procedure:
@@ -173,6 +206,10 @@ def mknil():
     return mklist()
 
 
+def list_tostring(var):
+    return pprint.pformat(var)
+
+
 def isnil(var):
     identical(var, mknil())
 
@@ -211,3 +248,7 @@ def mktable():
 
 def istable(var):
     return isinstance(var, dict)  # TODO
+
+
+def table_tostring(var):
+    return pprint.pformat(var)

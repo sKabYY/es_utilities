@@ -123,9 +123,9 @@ def isstring(s):
 # symbol ##################################################
 
 
-class TiSymbol(TiType):
+class TiSymbol(object):
     def __init__(self, v):
-        super(TiSymbol, self).__init__(TYPE.SYMBOL, content=v)
+        self.content = v
 
     def __eq__(self, x):
         return issymbol(x) and self.content == x.content
@@ -141,13 +141,16 @@ class TiSymbol(TiType):
     def __str__(self):
         return repr(self)
 
+    def symbol_string(self):
+        return '\'%s' % str(self)
+
 
 def mksymbol(s):
     return TiSymbol(s)
 
 
 def issymbol(v):
-    return check_type(v, TYPE.SYMBOL)
+    return type(v) == TiSymbol
 
 
 # procedure ###############################################

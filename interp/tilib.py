@@ -69,7 +69,7 @@ def build_ast(text):
                 if not isinstance(t, list) and t.type == QUOTE:
                     # make sure that quote is not the last element
                     check_error(
-                        i < n - 1,
+                        i + 1 < n,
                         "Syntaxe error: nothing follows quote")
                     t.value = KW.QUOTE
                     buf.append([t, node[i + 1]])

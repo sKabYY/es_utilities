@@ -27,7 +27,10 @@ def hits_sources(formatted_data):
         try:
             return doc._source
         except AttributeError:
-            return doc.fields
+            try:
+                return doc.fields
+            except AttributeError:
+                return {}
 
     return map(get_source_or_fields, formatted_data.hits.hits)
 

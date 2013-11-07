@@ -23,12 +23,15 @@ from interp.titype import (
     issymbol,
     mkprimitive,
 )
+from common.container import Table
 
 
-__global_url = 'localhost'
-__global_port = '9200'
-__global_index = '*'
-__global_doc_type = mkvoid()
+buildin_values = Table()
+
+buildin_values.url = 'localhost'
+buildin_values.port = '9200'
+buildin_values.index = '*'
+buildin_values.doc_type = mkvoid()
 
 
 def tiesproc(f):
@@ -41,49 +44,45 @@ def tiesproc(f):
 @tiesproc
 def connect(url, port):
     r'''(connect url port): <url> and <port> are strings.'''
-    global __global_url
-    global __global_port
-    __global_url = url
-    __global_port = port
+    buildin_values.url = url
+    buildin_values.port = port
     return mkvoid()
 
 
 @tiesproc
 def set_index(index):
     r'''(set-index! index): <index> is a string.'''
-    global __global_index
-    __global_index = index
+    buildin_values.index = index
     return mkvoid()
 
 
 @tiesproc
 def get_index():
     r'''(get-index): Returns the index currently in use.'''
-    return __global_index
+    return buildin_values.index
 
 
 @tiesproc
 def set_doc_type(doc_type):
     r'''(set-doc-type! doc-type): <doc-type> is a string.'''
-    global __global_doc_type
-    __global_doc_type = doc_type
+    buildin_values.doc_type = doc_type
     return mkvoid()
 
 
 @tiesproc
 def get_doc_type():
     r'''(get-doc-type): Returns the doc type currently in use.'''
-    return __global_doc_type
+    return buildin_values.doc_type
 
 
 def prompt():
     p = '%s:%s/%s' % (
-        __global_url, __global_port, __global_index,
+        buildin_values.url, buildin_values.port, buildin_values.index,
     )
-    if isvoid(__global_doc_type):
+    if isvoid(buildin_values.doc_type):
         return p
     else:
-        return '%s/%s' % (p, __global_doc_type)
+        return '%s/%s' % (p, buildin_values.doc_type)
 
 
 def translate_wrapper(hits, facets, conditions):
@@ -131,15 +130,15 @@ def es_search(post_data):
 <post_data> is a translated data.
 This function returns the origin response'''
     es = ES.Elasticsearch([{
-        'host': __global_url,
-        'post': __global_port,
+        'host': buildin_values.url,
+        'post': buildin_values.port,
     }])
     kwargs = {
-        'index': __global_index,
+        'index': buildin_values.index,
         'body': post_data,
     }
-    if not isvoid(__global_doc_type):
-        kwargs['doc_type'] = __global_doc_type
+    if not isvoid(buildin_values.doc_type):
+        kwargs['doc_type'] = buildin_values.doc_type
     return _format(es.search(**kwargs))
 
 
@@ -147,11 +146,14 @@ class MissingArgument(object):
     def __init__(self, msg):
         self.msg = msg
 
+    def __repr__(self):
+        return '<MissingArgument %s>' % repr(self.msg)
+
     def __str__(self):
         return self.msg
 
 
-def parse_args(templates, *args):
+def parse_args(template, *args):
 
     def get_options_from_arguments(lst):
         n = len(lst)
@@ -171,14 +173,14 @@ def parse_args(templates, *args):
             i += 2
         return res
 
-    def default_kwargs(templates):
+    def default_kwargs(template):
         d = {}
-        for _, key, value in templates:
-            d[key] = value
+        for _, key, value in template:
+            d[key] = get_buildin_value_or_self(value)
         return d
 
-    def find_argument_name(templates, option):
-        for option_name, arg_name, _ in templates:
+    def find_argument_name(template, option):
+        for option_name, arg_name, _ in template:
             if option == option_name:
                 return arg_name
         raise_error('Unknown option %s' % option)
@@ -208,12 +210,13 @@ def parse_args(templates, *args):
 
     if has_symbol(args):
         options = get_options_from_arguments(args)
-        translate_args = default_kwargs(templates)
+        translate_args = default_kwargs(template)
         for option, param in options:
-            arg_name = find_argument_name(templates, option)
+            arg_name = find_argument_name(template, option)
             translate_args[arg_name] = param
     else:
-        translate_args = add_default(args, map(lambda t: t[2], templates))
+        translate_args = add_default(
+            args, map(lambda t: get_buildin_value_or_self(t[2]), template))
     check_missing(translate_args)
     return translate_args
 
@@ -228,7 +231,7 @@ def unpack_and_translate(do_translate_func, translate_args):
 
 
 # environment for conditions ###
-__global_default_conditions = []
+buildin_values.default_conditions = []
 ###
 
 
@@ -242,9 +245,9 @@ def Sort(field, reverse=mkfalse()):
 
 
 # environment for hits ###
-__global_hits_default_size = 10
-__global_hits_default_fields = []
-__global_hits_default_sort = None
+buildin_values.hits_default_size = 10
+buildin_values.hits_default_fields = []
+buildin_values.hits_default_sort = None
 ###
 
 
@@ -257,12 +260,7 @@ def hits_parse_args(*args):
             (search-hits 's size 'f fields 'c conditions 'sort sort)
     All arguments are optional.
     '''
-    return parse_args(
-        [('\'s', 'size', __global_hits_default_size),
-         ('\'f', 'fields', __global_hits_default_fields),
-         ('\'c', 'conditions', __global_default_conditions),
-         ('\'sort', 'sort', __global_hits_default_sort)],
-        *args)
+    return parse_args(get_template('hits'), *args)
 
 
 def do_translate_hits(size, fields, conditions, sort):
@@ -290,7 +288,7 @@ def search_hits(*args):
 __GLOBAL_TERMS_TAGS = '__terms__'
 
 # environment for terms ###
-__global_terms_default_size = 10
+buildin_values.terms_default_size = 10
 ###
 
 
@@ -303,11 +301,7 @@ def terms_parse_args(*args):
             (search-hits 'f field 's size 'c conditions)
     <size> and <conditions> are optional.
     '''
-    return parse_args(
-        [('\'f', 'field', MissingArgument('Missing argument "field"')),
-         ('\'s', 'size', __global_terms_default_size),
-         ('\'c', 'conditions', __global_default_conditions)],
-        *args)
+    return parse_args(get_template('terms'), *args)
 
 
 def do_translate_terms(field, size, conditions):
@@ -335,9 +329,9 @@ def search_terms(*args):
 __GLOBAL_HISTOGRAM_TAGS = '__histogram__'
 
 # environment for histogram ###
-__global_histogram_default_timestamp_field = MissingArgument(
+buildin_values.histogram_default_timestamp_field = MissingArgument(
     'Missing argument "timestamp_field"')
-__global_histogram_default_interval = 'hour'
+buildin_values.histogram_default_interval = 'hour'
 ###
 
 
@@ -351,13 +345,7 @@ def histogram_parse_args(*args):
     <interval> and <conditions> are optional.
     <timestamp_field> can be optional.
     '''
-    return parse_args(
-        [('\'t', 'timestamp_field',
-          __global_histogram_default_timestamp_field),
-         ('\'i', 'interval',
-          __global_histogram_default_interval),
-         ('\'c', 'conditions', __global_default_conditions)],
-        *args)
+    return parse_args(get_template('histogram'), *args)
 
 
 def do_translate_histogram(timestamp_field, interval, conditions):
@@ -379,6 +367,64 @@ def search_histogram(*args):
     data = facet_entries(__GLOBAL_HISTOGRAM_TAGS, orig)
     # histogram has no additional info
     return ResponseList(data)
+
+
+__global_all_templates = [
+    ('hits', [
+        ('\'s', 'size', 'hits_default_size'),
+        ('\'f', 'fields', 'hits_default_fields'),
+        ('\'c', 'conditions', 'default_conditions'),
+        ('\'sort', 'sort', 'hits_default_sort')]),
+    ('terms', [
+        ('\'f', 'field', MissingArgument('Missing argument "field"')),
+        ('\'s', 'size', 'terms_default_size'),
+        ('\'c', 'conditions', 'default_conditions')]),
+    ('histogram', [
+        ('\'t', 'timestamp_field', 'histogram_default_timestamp_field'),
+        ('\'i', 'interval', 'histogram_default_interval'),
+        ('\'c', 'conditions', 'default_conditions')]),
+]
+
+
+def get_template(name):
+    for n, template in __global_all_templates:
+        if n == name:
+            return template
+    assert False
+
+
+def get_buildin_value_or_self(key):
+    if type(key) == str:
+        return buildin_values[key]
+    else:
+        return key
+
+
+@tiesproc
+def show_default_args(*keys):
+    def try_get_symbol_content(v):
+        if issymbol(v):
+            return v.content
+        else:
+            return v
+
+    if len(keys) == 0:
+        pred = lambda x: True
+    else:
+        keys = map(try_get_symbol_content, keys)
+        pred = lambda x: x in keys
+
+    def print_template(indent, template):
+        for option, name, key in template:
+            value = get_buildin_value_or_self(key)
+            print '%s%s\t%s\t%s' % (indent, option, name, repr(value))
+
+    for name, template in __global_all_templates:
+        if pred(name):
+            print name
+            print_template(' ', template)
+            print
+    return mkvoid()
 
 
 # functions of datetime ###################################
@@ -433,6 +479,8 @@ def ties_primitive_procedures():
         ('search-terms', search_terms, _any),
         ('translate-histogram', translate_histogram, _any),
         ('search-histogram', search_histogram, _any),
+        # default arguments
+        ('show-default-args', show_default_args, _any),
         # datetime
         ('now', now, eq2nd(0)),
         ('hours', hours, eq2nd(1)),

@@ -9,6 +9,8 @@ text = '''
 (display (gcd 144 12144))
 (display 'x)
 'x
+''x
+'('x)
 '''
 
 import tilib

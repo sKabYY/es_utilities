@@ -59,27 +59,30 @@ def build_ast(text):
                 "Syntax error: check the parentheses")
 
     # deal with quote
-    def handle_quote(node):
-        if isinstance(node, list):
-            buf = []
-            n = len(node)
-            i = 0
-            while i < n:
-                t = node[i]
-                if not isinstance(t, list) and t.type == QUOTE:
-                    # make sure that quote is not the last element
-                    check_error(
-                        i + 1 < n,
-                        "Syntaxe error: nothing follows quote")
-                    t.value = KW.QUOTE
-                    buf.append([t, node[i + 1]])
-                    i += 2
+    def handle_quote(lst):
+        n = len(lst)
+
+        def __iter(start):
+            if start < n:
+                node = lst[start]
+                rest = __iter(start + 1)
+                if isinstance(node, list):
+                    rest.insert(0, handle_quote(node))
+                elif node.type == QUOTE:
+                    node.value = KW.QUOTE
+                    if start + 1 >= n:
+                        check_error(
+                            start + 1 < n,
+                            "Syntaxe error: nothing follows quote")
+                    rest[0] = [node, rest[0]]
                 else:
-                    buf.append(handle_quote(t))
-                    i += 1
-            return buf
-        else:
-            return node
+                    rest.insert(0, node)
+                return rest
+            else:
+                return []
+
+        return __iter(0)
+
     return handle_quote(token_tree)
 
 
@@ -215,11 +218,11 @@ def eval_quote(exp):
     def __eval(exp1):
         if type(exp1) == list:
             if is_quote(exp1):
-                return eval_quote(exp1)
+                return mksymbol(eval_quote(exp1))
             else:
                 return mklist(*map(__eval, exp1))
         elif is_self_evaluating(exp1):
-            return eval_self(exp1)
+            return mksymbol(eval_self(exp1))
         elif is_variable(exp1):
             return mksymbol(exp1.value)
         else:

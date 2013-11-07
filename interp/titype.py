@@ -132,7 +132,7 @@ class TiSymbol(object):
 
     def __repr__(self):
         if issymbol(self.content):
-            return '\'%s' % repr(self.content)
+            return self.content.symbol_string()
         elif islist(self.content):
             return list_tostring(self.content)
         else:

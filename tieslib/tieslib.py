@@ -386,6 +386,54 @@ __global_all_templates = [
 ]
 
 
+@tiesproc
+def set_condition(conditions):
+    buildin_values.default_conditions = conditions
+    return mkvoid()
+
+
+@tiesproc
+def set_hits_size(size):
+    buildin_values.hits_default_size = size
+    return mkvoid()
+
+
+@tiesproc
+def set_hits_fields(fields):
+    buildin_values.hits_default_fields = fields
+    return mkvoid()
+
+
+@tiesproc
+def set_hits_sort(sort):
+    buildin_values.hits_default_sort = sort
+    return mkvoid()
+
+
+@tiesproc
+def set_terms_field(field):
+    buildin_values.terms_default_field = field
+    return mkvoid()
+
+
+@tiesproc
+def set_terms_size(size):
+    buildin_values.terms_default_size = size
+    return mkvoid()
+
+
+@tiesproc
+def set_histogram_timestamp_field(timestamp_field):
+    buildin_values.histogram_default_timestamp_field = timestamp_field
+    return mkvoid()
+
+
+@tiesproc
+def set_histogram_interval(interval):
+    buildin_values.histogram_default_interval = interval
+    return mkvoid()
+
+
 def get_template(name):
     for n, template in __global_all_templates:
         if n == name:
@@ -481,6 +529,15 @@ def ties_primitive_procedures():
         ('search-histogram', search_histogram, _any),
         # default arguments
         ('show-default-args', show_default_args, _any),
+        ('set-condition!', set_condition, eq2nd(1)),
+        ('set-hits-size!', set_hits_size, eq2nd(1)),
+        ('set-hits-fields!', set_hits_fields, eq2nd(1)),
+        ('set-hits-sort!', set_hits_sort, eq2nd(1)),
+        ('set-terms-field!', set_terms_field, eq2nd(1)),
+        ('set-terms-size!', set_terms_size, eq2nd(1)),
+        ('set-histogram-timestamp-field',
+         set_histogram_timestamp_field, eq2nd(1)),
+        ('set-histogram-interval', set_histogram_interval, eq2nd(1)),
         # datetime
         ('now', now, eq2nd(0)),
         ('hours', hours, eq2nd(1)),

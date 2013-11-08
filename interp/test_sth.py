@@ -10,10 +10,10 @@ cases = '''
 ((lambda (y) (((lambda (y) (lambda (x) (* y 2))) 3) 0)) 4)
 '''.strip().split('\n')
 
-from tilib import build_ast, eval_seq, setup_environment
+from tilib import dostring, setup_environment
 
 env = setup_environment()
 for src in cases:
     print src,
     print '=',
-    print eval_seq(build_ast(src), env)
+    print dostring(src, env)

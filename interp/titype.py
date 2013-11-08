@@ -117,40 +117,49 @@ def mkstring(s):
 
 
 def isstring(s):
-    return isinstance(s, str)
+    return type(s) == str
 
 
 # symbol ##################################################
 
 
-class TiSymbol(object):
-    def __init__(self, v):
-        self.content = v
-
-    def __eq__(self, x):
-        return issymbol(x) and self.content == x.content
+class Symbol(str):
+    def __init__(self, s):
+        super(Symbol, self).__init__(s)
 
     def __repr__(self):
-        if issymbol(self.content):
-            return self.content.symbol_string()
-        elif islist(self.content):
-            return list_tostring(self.content)
-        else:
-            return self.content
+        return str(self)
 
     def __str__(self):
-        return repr(self)
+        return super(Symbol, self).__str__()
 
-    def symbol_string(self):
-        return '\'%s' % str(self)
+    def __eq__(self, v):
+        if issymbol(v):
+            symbol_tostring(self) == symbol_tostring(v)
+        elif isstring(v):
+            return symbol_tostring(self) == v
+        else:
+            return False
 
 
 def mksymbol(s):
-    return TiSymbol(s)
+    return Symbol(s)
 
 
 def issymbol(v):
-    return type(v) == TiSymbol
+    return type(v) == Symbol
+
+
+def symbol_tostring(sym):
+    return str(sym)
+
+
+def symbol_eqs(a, b):
+    if issymbol(a):
+        a = symbol_tostring(a)
+    if issymbol(b):
+        b = symbol_tostring(b)
+    return a == b
 
 
 # procedure ###############################################

@@ -13,8 +13,8 @@ text = '''
 '('x)
 '''
 
-import tilib
-tree = tilib.build_ast(text)
+import tiparser
+tree = tiparser.parse(text)
 
 from pprint import pprint
 pprint(tree)

@@ -5,6 +5,6 @@ tests = '''
 (dfe (welj) s12)
 '''.strip().split('\n')
 
-from scanner import scanner
+from tiparser import scanne
 for data in tests:
-    print scanner(data)
+    print scanne(data)

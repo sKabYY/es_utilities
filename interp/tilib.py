@@ -2,18 +2,17 @@
 
 import sys
 
-from simpletable import SimpleTable, enum
+from simpletable import SimpleTable
 table = SimpleTable  # rename SimpleTable
-from scanner import Token
-from scanner import LPAREN, RPAREN, VARIABLE, NUMBER, STRING, QUOTE
 
 from titype import (
     mkvoid, isvoid,
     mknil, isnil,
     mktrue, istrue, idtrue, mkboolean,
     mkfalse, idfalse,
+    isnumber,
     isstring,
-    mksymbol,
+    issymbol, symbol_tostring,
     mkprimitive, isprimitive,
     mkcompound, iscompound,
     mklist, islist, list_tostring,
@@ -21,92 +20,16 @@ from titype import (
     istable, table_tostring,
 )
 
-
-def build_ast(text):
-    # scan
-    from scanner import scanner
-    tokens = scanner(text)
-    num_tokens = len(tokens)
-
-    # build ast_tree
-    token_tree = []
-
-    def parse_start(start):
-        node = []
-        i = start
-        while i < num_tokens:
-            t = tokens[i]
-            if t.type == LPAREN:
-                child, i = parse_start(i + 1)
-                node.append(child)
-            elif t.type == RPAREN:
-                return node, i + 1
-            else:
-                node.append(t)
-                i += 1
-        return node, num_tokens
-
-    def is_all_rparen(start, end):
-        r'''
-        Returns whether all the tokens have type RPAREN in tokens[start:end]
-        '''
-        return all(map(
-            lambda i: tokens[i].type == RPAREN,
-            xrange(start, end)))
-
-    token_tree, end = parse_start(0)
-    check_error(end == num_tokens or is_all_rparen(end, num_tokens),
-                "Syntax error: check the parentheses")
-
-    # deal with quote
-    def handle_quote(lst):
-        n = len(lst)
-
-        def __iter(start):
-            if start < n:
-                node = lst[start]
-                rest = __iter(start + 1)
-                if isinstance(node, list):
-                    rest.insert(0, handle_quote(node))
-                elif node.type == QUOTE:
-                    node.value = KW.QUOTE
-                    if start + 1 >= n:
-                        check_error(
-                            start + 1 < n,
-                            "Syntaxe error: nothing follows quote")
-                    rest[0] = [node, rest[0]]
-                else:
-                    rest.insert(0, node)
-                return rest
-            else:
-                return []
-
-        return __iter(0)
-
-    return handle_quote(token_tree)
-
-
-#keywords
-KW = enum(
-    'define',
-    'begin',
-    'load',
-    'if',
-    'cond',
-    'lambda',
-    'quote',
-    #'and',  TODO
-    #'or',
-    key_mapper=lambda s: s.upper())
+from tikeyword import KW
+from tierror import TiError
 
 
 def keywords():
     return set(KW.values())
 
 
-class InterpError(Exception):
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
+class InterpError(TiError):
+    pass
 
 
 def check_error(b, msg=None):
@@ -122,12 +45,21 @@ def raise_error(msg):
 
 
 class Env(object):
+    r'''
+    Symbol => TiValue
+    '''
     def __init__(self, enclosing_env=None):
         self.current_env = {}
         self.enclosing_env = enclosing_env
 
     def put(self, symbol, value):
         self.current_env[symbol] = value
+
+    def get(self, symbol):
+        r'''
+        May throw KeyError
+        '''
+        return self.current_env[symbol]
 
     def putall(self, symbol_value_list):
         for symbol, value in symbol_value_list:
@@ -137,7 +69,7 @@ class Env(object):
         cur = self
         while cur is not None:
             try:
-                return cur.current_env[symbol]
+                return cur.get(symbol)
             except KeyError:
                 cur = cur.enclosing_env
         raise_error('Unbound symbol: "%s"' % symbol)
@@ -160,80 +92,44 @@ class Env(object):
 #######################################################################
 
 
-def make_procedure(arg_tokens, exps):
-    check_error(
-        type(arg_tokens) == list and reduce(
-            lambda x, y: x and y,
-            map(is_variable, arg_tokens),
-            True))
-    args = map(lambda a: a.value, arg_tokens)
+def make_procedure(args, exps):
+    check_error(islist(args) and all(map(issymbol, args)))
     check_error(len(exps) > 0)
     if len(exps) == 1:
         proc = analyze(exps[0])
     else:
         proc = analyze_seq(exps)
+    args = map(symbol_tostring, args)
     return lambda env: mkcompound(args, proc, env)
 
 
-def is_token_type(exp, _type):
-    return isinstance(exp, Token) and exp.type == _type
-
-
-def is_token_in_types(exp, types):
-    return isinstance(exp, Token) and exp.type in types
-
-
-def is_token_value(exp, value):
-    return isinstance(exp, Token) and exp.value == value
-
-
 def is_tagged_list(exp, tag):
-    if isinstance(exp, list) and len(exp) > 0:
-        return is_token_value(exp[0], tag)
+    if islist(exp) and len(exp) > 0:
+        return issymbol(exp[0]) and exp[0] == tag
     else:
         return False
 
 
 def is_self_evaluating(exp):
-    self_evaluating_types = (NUMBER, STRING)
-    return is_token_in_types(exp, self_evaluating_types)  # TODO
+    preds = [isnumber, isstring]
+    return any(map(lambda pred: pred(exp), preds))
 
 
 def eval_self(exp):
-    return exp.value
+    return exp
 
 
 def is_variable(exp):
-    return is_token_type(exp, VARIABLE)
+    return issymbol(exp)
 
 
 def is_quote(exp):
     return is_tagged_list(exp, KW.QUOTE)
 
 
-def eval_quote(exp):
-    assert len(exp) == 2, str(exp)
-    exp1 = exp[1]
-
-    def __eval(exp1):
-        if type(exp1) == list:
-            if is_quote(exp1):
-                return mksymbol(eval_quote(exp1))
-            else:
-                return mklist(*map(__eval, exp1))
-        elif is_self_evaluating(exp1):
-            return mksymbol(eval_self(exp1))
-        elif is_variable(exp1):
-            return mksymbol(exp1.value)
-        else:
-            raise_error("Unknown quote exp type: %s" % str(exp))
-
-    return __eval(exp1)
-
-
 def analyze_quote(exp):
-    value = eval_quote(exp)
-    return lambda env: value
+    assert len(exp) == 2, str(exp)
+    return lambda env: exp[1]
 
 
 def is_definition(exp):
@@ -250,17 +146,19 @@ def env_put(env, symbol, value):
 #   2, (define a 1.0) or (define f (lambda (x) exps[x]))
 def analyze_define(exp):
     check_error(len(exp) >= 3)
-    if type(exp[1]) == list:
-        subexp = exp[1]
-        check_error(len(subexp) > 0 and is_variable(subexp[0]))
+    subexp = exp[1]
+    if islist(subexp):
+        check_error(len(subexp) > 0 and issymbol(subexp[0]))
         arguments = subexp[1:]
         proc = make_procedure(arguments, exp[2:])
-        return lambda env: env_put(env, subexp[0].value, proc(env))
+        name = symbol_tostring(subexp[0])
+        return lambda env: env_put(env, name, proc(env))
     else:
         check_error(len(exp) == 3)
-        check_error(is_variable(exp[1]))
+        check_error(issymbol(subexp))
         proc = analyze(exp[2])
-        return lambda env: env_put(env, exp[1].value, proc(env))
+        name = symbol_tostring(subexp)
+        return lambda env: env_put(env, name, proc(env))
 
 
 def is_begin(exp):
@@ -323,10 +221,6 @@ def analyze_lambda(exp):
     return make_procedure(exp[1], exp[2:])
 
 
-def is_application(exp):
-    return isinstance(exp, list)
-
-
 def analyze_application(exp):
     proc = analyze(exp[0])
     args = map(analyze, exp[1:])
@@ -365,7 +259,7 @@ def analyze(exp):
     if is_self_evaluating(exp):
         return lambda env: eval_self(exp)
     elif is_variable(exp):
-        return lambda env: env.lookup(exp.value)
+        return lambda env: env.lookup(symbol_tostring(exp))
     elif is_quote(exp):
         return analyze_quote(exp)
     elif is_definition(exp):
@@ -380,7 +274,7 @@ def analyze(exp):
         return analyze_cond(exp)
     elif is_lambda(exp):
         return analyze_lambda(exp)
-    elif is_application(exp):
+    elif islist(exp):  # otherwise
         return analyze_application(exp)
     else:
         raise_error('unknown exp type -- ANALYZE: %s' % exp)
@@ -599,6 +493,7 @@ __global_format_map = [
     (is_help_procedure, lambda v: _help.__doc__),
     (idtrue, lambda v: 'true'),
     (idfalse, lambda v: 'false'),
+    (issymbol, symbol_tostring),
     (isprimitive, lambda v: '#<procedure %s>' % v.name),
     (iscompound, lambda v: '#<procedure>'),
     (islist, list_tostring),
@@ -629,7 +524,8 @@ def todoc(v):
 
 
 def dostring(src, env):
-    return eval_seq(build_ast(src), env)
+    from tiparser import parse
+    return eval_seq(parse(src), env)
 
 
 def dofile(fn, env):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from tilib import build_ast, setup_environment, eval_seq
+from tilib import setup_environment, dostring
 
 
 text = '''
@@ -12,5 +12,5 @@ text = '''
 '''
 
 env = setup_environment()
-output = eval_seq(build_ast(text), env)
+output = dostring(text, env)
 print output

@@ -3,9 +3,11 @@
 import sys
 import readline
 
+from tierror import TiError
+
 from tilib import (
     keywords,
-    InterpError, setup_environment,
+    setup_environment,
     isvoid, tostring, dostring,
     dofile
 )
@@ -116,7 +118,7 @@ def driver_loop(newenv, get_prompt):
                 output = interpreter.eval(text)
                 if not isvoid(output):
                     print tostring(output)
-            except InterpError as e:
+            except TiError as e:
                 print >>sys.stderr, '[Error] %s' % str(e)
             except Exception as e:
                 import traceback

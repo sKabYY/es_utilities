@@ -20,7 +20,7 @@ from interp.tilib import (
 from interp.titype import (
     mkvoid, isvoid,
     mkfalse, istrue,
-    issymbol,
+    issymbol, symbol_tostring,
     mkprimitive,
 )
 from common.container import Table
@@ -164,7 +164,7 @@ def parse_args(template, *args):
             check_error(
                 issymbol(option),
                 'Expect a option but get %s' % option)
-            option = option.symbol_string()
+            option = '\'%s' % symbol_tostring(option)
             check_error(
                 i + 1 < n,
                 'Missing parameter after %s' % option)

@@ -1,3 +1,4 @@
+import pprint
 import elasticsearch as ES
 
 from translator.translator import (
@@ -26,19 +27,66 @@ from interp.titype import (
 from common.container import Table
 
 
-buildin_values = Table()
-
-buildin_values.url = 'localhost'
-buildin_values.port = '9200'
-buildin_values.index = '*'
-buildin_values.doc_type = mkvoid()
-
-
 def tiesproc(f):
     '''
     This decorator does nothing. It just tags the functions which are exported.
     '''
     return f
+
+
+# color ###################################################
+def apply_color(s, c):
+
+    def color_code(c):
+        return '\001\033[%dm\002' % c
+
+    def end_color():
+        return color_code(0)
+
+    return '%s%s%s' % (color_code(c), s, end_color())
+
+
+def yellow(s):
+    return apply_color(s, 93)
+
+
+def red(s):
+    return apply_color(s, 91)
+###########################################################
+
+
+buildin_values = Table()
+
+buildin_values.debug_mode = False
+
+
+def is_debug_on():
+    return buildin_values.debug_mode
+
+
+def dbg_print(msg, data):
+    if is_debug_on():
+        print msg
+        pprint.pprint(data)
+        print
+
+
+@tiesproc
+def debug_mode_on():
+    buildin_values.debug_mode = True
+    return mkvoid()
+
+
+@tiesproc
+def debug_mode_off():
+    buildin_values.debug_mode = False
+    return mkvoid()
+
+
+buildin_values.url = 'localhost'
+buildin_values.port = '9200'
+buildin_values.index = '*'
+buildin_values.doc_type = mkvoid()
 
 
 @tiesproc
@@ -76,13 +124,16 @@ def get_doc_type():
 
 
 def prompt():
-    p = '%s:%s/%s' % (
+    host_info = '%s:%s/%s' % (
         buildin_values.url, buildin_values.port, buildin_values.index,
     )
-    if isvoid(buildin_values.doc_type):
-        return p
-    else:
-        return '%s/%s' % (p, buildin_values.doc_type)
+    buf = [yellow(host_info)]
+    if not isvoid(buildin_values.doc_type):
+        buf.append(yellow('/%s' % buildin_values.doc_type))
+    if is_debug_on():
+        buf.append(' ')
+        buf.append(red('[DEBUG]'))
+    return ''.join(buf)
 
 
 def translate_wrapper(hits, facets, conditions):
@@ -100,9 +151,6 @@ def has_symbol(lst):
 
 
 # response types ##########################################
-import pprint
-
-
 class ResponseList(list):
     def __init__(self, initdata, additional_info=None):
         r'''
@@ -139,7 +187,10 @@ This function returns the origin response'''
     }
     if not isvoid(buildin_values.doc_type):
         kwargs['doc_type'] = buildin_values.doc_type
-    return _format(es.search(**kwargs))
+    dbg_print('Post data:', post_data)
+    res = _format(es.search(**kwargs))
+    dbg_print('Get:', res)
+    return res
 
 
 class MissingArgument(object):
@@ -519,6 +570,9 @@ def range_hours_ago(field, n):
 
 def ties_primitive_procedures():
     PM = [
+        # debug
+        ('debug-on', debug_mode_on, eq_to(0)),
+        ('debug-off', debug_mode_off, eq_to(0)),
         # environment
         ('connect!', connect, eq_to(2)),
         ('set-index!', set_index, eq_to(1)),

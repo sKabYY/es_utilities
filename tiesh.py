@@ -8,14 +8,8 @@ from tieslib.tieslib import (
 from interp.interp import newenv_with_preload, driver_loop
 
 
-def yellow(s):
-    YELLOW = '\001\033[93m\002'
-    ENDC = '\001\033[0m\002'
-    return '%s%s%s' % (YELLOW, s, ENDC)
-
-
 def input_prompt():
-    return yellow('%s\n> ' % prompt())
+    return '%s\n> ' % prompt()
 
 ### Load and save history file ############################
 import os

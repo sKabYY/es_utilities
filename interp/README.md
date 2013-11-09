@@ -8,6 +8,7 @@ Buildin Types
 * boolean: true and false.
 * number: integer and float.
 * string.
+* symbol.
 * procedure: compound procedure and primitive procedure.
 * list: python list. <nil> is the empty list.
 * table: python dict. !TODO!

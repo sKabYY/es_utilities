@@ -4,10 +4,13 @@
 
 # Conditions ##############################################
 
+import pprint
+
 
 # Base class
 class Condition(object):
-    pass
+    def __str__(self):
+        return pprint.pformat(self.to_dict())
 
 
 class NilCondition(Condition):

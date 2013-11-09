@@ -487,6 +487,12 @@ def now():
 
 
 @tiesproc
+def minutes(n):
+    r'''(minutes n): Returns timedelta(minutes=n).'''
+    return timedelta(minutes=n)
+
+
+@tiesproc
 def hours(n):
     r'''(hours n): Returns timedelta(hours=n).'''
     return timedelta(hours=n)
@@ -496,6 +502,16 @@ def hours(n):
 def days(n):
     r'''(days n): Returns timedelta(days=n).'''
     return timedelta(days=n)
+
+
+# functions of conditions #################################
+
+
+@tiesproc
+def range_hours_ago(field, n):
+    e_time = now()
+    s_time = e_time - hours(n)
+    return Range(field, s_time, e_time)
 
 
 ###########################################################
@@ -539,8 +555,11 @@ def ties_primitive_procedures():
         ('set-histogram-interval', set_histogram_interval, eq_to(1)),
         # datetime
         ('now', now, eq_to(0)),
+        ('minutes', minutes, eq_to(1)),
         ('hours', hours, eq_to(1)),
         ('days', days, eq_to(1)),
+        # short cuts for conditions
+        ('Range-hours-ago', range_hours_ago, eq_to(2)),
     ]
     return map(lambda (s, b, a): (s, mkprimitive(s, a, b)), PM)
 

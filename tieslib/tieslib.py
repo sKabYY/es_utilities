@@ -13,7 +13,7 @@ from translator.post_process import (
     facet_entries,
 )
 from interp.tilib import (
-    _any, ge2nd, eq2nd, inrange,
+    _any, ge_than, eq_to, inrange,
     setup_environment,
     check_error, raise_error,
 )
@@ -506,21 +506,21 @@ def days(n):
 def ties_primitive_procedures():
     PM = [
         # environment
-        ('connect!', connect, eq2nd(2)),
-        ('set-index!', set_index, eq2nd(1)),
-        ('get-index', get_index, eq2nd(0)),
-        ('set-doc-type!', set_doc_type, eq2nd(1)),
-        ('get-doc-type', get_doc_type, eq2nd(0)),
+        ('connect!', connect, eq_to(2)),
+        ('set-index!', set_index, eq_to(1)),
+        ('get-index', get_index, eq_to(0)),
+        ('set-doc-type!', set_doc_type, eq_to(1)),
+        ('get-doc-type', get_doc_type, eq_to(0)),
         # conditions
-        ('Equal', Equal, eq2nd(2)),
-        ('Range', Range, eq2nd(3)),
-        ('Prefix', Prefix, eq2nd(2)),
-        ('And', lambda *conds: And(conds), ge2nd(1)),
-        ('Or', lambda *conds: Or(conds), ge2nd(1)),
-        ('Not', Not, eq2nd(1)),
+        ('Equal', Equal, eq_to(2)),
+        ('Range', Range, eq_to(3)),
+        ('Prefix', Prefix, eq_to(2)),
+        ('And', lambda *conds: And(conds), ge_than(1)),
+        ('Or', lambda *conds: Or(conds), ge_than(1)),
+        ('Not', Not, eq_to(1)),
         # translate and search
         ('Sort', Sort, inrange(1, 2)),
-        ('origin-search', es_search, eq2nd(1)),
+        ('origin-search', es_search, eq_to(1)),
         ('translate-hits', translate_hits, _any),
         ('search-hits', search_hits, _any),
         ('translate-terms', translate_terms, _any),
@@ -529,19 +529,19 @@ def ties_primitive_procedures():
         ('search-histogram', search_histogram, _any),
         # default arguments
         ('show-default-args', show_default_args, _any),
-        ('set-condition!', set_condition, eq2nd(1)),
-        ('set-hits-size!', set_hits_size, eq2nd(1)),
-        ('set-hits-fields!', set_hits_fields, eq2nd(1)),
-        ('set-hits-sort!', set_hits_sort, eq2nd(1)),
-        ('set-terms-field!', set_terms_field, eq2nd(1)),
-        ('set-terms-size!', set_terms_size, eq2nd(1)),
+        ('set-condition!', set_condition, eq_to(1)),
+        ('set-hits-size!', set_hits_size, eq_to(1)),
+        ('set-hits-fields!', set_hits_fields, eq_to(1)),
+        ('set-hits-sort!', set_hits_sort, eq_to(1)),
+        ('set-terms-field!', set_terms_field, eq_to(1)),
+        ('set-terms-size!', set_terms_size, eq_to(1)),
         ('set-histogram-timestamp-field',
-         set_histogram_timestamp_field, eq2nd(1)),
-        ('set-histogram-interval', set_histogram_interval, eq2nd(1)),
+         set_histogram_timestamp_field, eq_to(1)),
+        ('set-histogram-interval', set_histogram_interval, eq_to(1)),
         # datetime
-        ('now', now, eq2nd(0)),
-        ('hours', hours, eq2nd(1)),
-        ('days', days, eq2nd(1)),
+        ('now', now, eq_to(0)),
+        ('hours', hours, eq_to(1)),
+        ('days', days, eq_to(1)),
     ]
     return map(lambda (s, b, a): (s, mkprimitive(s, a, b)), PM)
 

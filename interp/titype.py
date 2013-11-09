@@ -223,30 +223,34 @@ def list_tostring(var):
 
 
 def isnil(var):
-    identical(var, mknil())
+    return identical(var, mknil())
 
 
-def listdo_length(seq):
+def ispair(var):
+    return islist(var) and list_length(var) != 0
+
+
+def list_length(seq):
     return len(seq)
 
 
-def listdo_append(a, b):
+def list_append(a, b):
     res = mklist(*a)
     res.extend(b)
     return res
 
 
-def listdo_cons(a, seq):
+def list_cons(a, seq):
     res = mklist(*seq)
     res.insert(0, a)
     return res
 
 
-def listdo_car(seq):
+def list_car(seq):
     return seq[0]
 
 
-def listdo_cdr(seq):
+def list_cdr(seq):
     return seq[1:]
 
 

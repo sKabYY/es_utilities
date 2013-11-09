@@ -15,8 +15,8 @@ from titype import (
     issymbol, symbol_tostring,
     mkprimitive, isprimitive,
     mkcompound, iscompound,
-    mklist, islist, list_tostring,
-    listdo_append, listdo_cons, listdo_car, listdo_cdr,
+    mklist, islist, ispair, list_tostring,
+    list_append, list_cons, list_car, list_cdr,
     istable, table_tostring,
 )
 
@@ -368,23 +368,19 @@ def bind2nd(func, b, desc=None):
     return f
 
 
-def le2nd(a):
-    r'#args <= a'
-    return bind2nd(le, a, '<= %s' % a)
+def le_than(a):
+    return bind2nd(lambda x, y: x <= y, a, '<= %s' % a)
 
 
-def ge2nd(a):
-    r'#args >= a'
-    return bind2nd(ge, a, '>= %s' % a)
+def ge_than(a):
+    return bind2nd(lambda x, y: x >= y, a, '>= %s' % a)
 
 
-def eq2nd(a):
-    r'#args == a'
-    return bind2nd(equal, a, '= %s' % a)
+def eq_to(a):
+    return bind2nd(lambda x, y: x == y, a, '= %s' % a)
 
 
 def inrange(a, b):
-    r'a <= #args <= b'
     f = lambda x: a <= x <= b
     f.__doc__ = '%s <= #args <= %s' % (a, b)
     return f
@@ -423,48 +419,51 @@ def _help(*args):
 def append(a, b):
     check_error(islist(a))
     check_error(islist(b))
-    return listdo_append(a, b)
+    return list_append(a, b)
 
 
 def cons(a, seq):
     check_error(islist(seq))
-    return listdo_cons(a, seq)
+    return list_cons(a, seq)
 
 
 def car(seq):
     check_error(islist(seq))
     check_error(not isnil(seq))
-    return listdo_car(seq)
+    return list_car(seq)
 
 
 def cdr(seq):
     check_error(islist(seq))
     check_error(not isnil(seq))
-    return listdo_cdr(seq)
+    return list_cdr(seq)
 
 
 def primitive_procedures():
     PM = [
-        ('void', mkvoid, eq2nd(0)),
-        ('help', _help, le2nd(1)),
-        ('display', display, eq2nd(1)),
-        ('map', _map, eq2nd(2)),
+        ('void', mkvoid, eq_to(0)),
+        ('help', _help, le_than(1)),
+        ('display', display, eq_to(1)),
+        ('map', _map, eq_to(2)),
         ('+', number_add, _any),
-        ('-', number_minus, ge2nd(1)),
+        ('-', number_minus, ge_than(1)),
         ('*', number_multiply, _any),
-        ('/', number_divide, ge2nd(1)),
-        ('%', number_remainder, eq2nd(2)),
-        ('quotient', number_divide, ge2nd(1)),
-        ('remainder', number_remainder, eq2nd(2)),
-        ('=', equal, eq2nd(2)),
-        ('<', lt, eq2nd(2)),
-        ('<=', le, eq2nd(2)),
-        ('>', gt, eq2nd(2)),
-        ('>=', ge, eq2nd(2)),
+        ('/', number_divide, ge_than(1)),
+        ('%', number_remainder, eq_to(2)),
+        ('quotient', number_divide, ge_than(1)),
+        ('remainder', number_remainder, eq_to(2)),
+        ('=', equal, eq_to(2)),
+        ('<', lt, eq_to(2)),
+        ('<=', le, eq_to(2)),
+        ('>', gt, eq_to(2)),
+        ('>=', ge, eq_to(2)),
         ('list', mklist, _any),
-        ('cons', cons, eq2nd(2)),
-        ('car', car, eq2nd(1)),
-        ('cdr', cdr, eq2nd(1)),
+        ('list?', lambda v: mkboolean(islist(v)), eq_to(1)),
+        ('null?', lambda v: mkboolean(isnil(v)), eq_to(1)),
+        ('pair?', lambda v: mkboolean(ispair(v)), eq_to(1)),
+        ('cons', cons, eq_to(2)),
+        ('car', car, eq_to(1)),
+        ('cdr', cdr, eq_to(1)),
     ]
     return map(lambda (s, b, a): (s, mkprimitive(s, a, b)), PM)
 

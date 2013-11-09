@@ -387,7 +387,12 @@ __global_all_templates = [
 
 
 @tiesproc
-def set_condition(conditions):
+def get_conditions():
+    return buildin_values.default_conditions
+
+
+@tiesproc
+def set_conditions(conditions):
     buildin_values.default_conditions = conditions
     return mkvoid()
 
@@ -450,16 +455,9 @@ def get_buildin_value_or_self(key):
 
 @tiesproc
 def show_default_args(*keys):
-    def try_get_symbol_content(v):
-        if issymbol(v):
-            return v.content
-        else:
-            return v
-
     if len(keys) == 0:
         pred = lambda x: True
     else:
-        keys = map(try_get_symbol_content, keys)
         pred = lambda x: x in keys
 
     def print_template(indent, template):
@@ -529,7 +527,8 @@ def ties_primitive_procedures():
         ('search-histogram', search_histogram, _any),
         # default arguments
         ('show-default-args', show_default_args, _any),
-        ('set-condition!', set_condition, eq_to(1)),
+        ('get-condition', get_conditions, eq_to(0)),
+        ('set-conditions!', set_conditions, eq_to(1)),
         ('set-hits-size!', set_hits_size, eq_to(1)),
         ('set-hits-fields!', set_hits_fields, eq_to(1)),
         ('set-hits-sort!', set_hits_sort, eq_to(1)),

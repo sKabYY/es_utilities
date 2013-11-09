@@ -6,6 +6,7 @@ from simpletable import SimpleTable
 table = SimpleTable  # rename SimpleTable
 
 from titype import (
+    identical,
     mkvoid, isvoid,
     mknil, isnil,
     mktrue, istrue, idtrue, mkboolean,
@@ -461,6 +462,7 @@ def primitive_procedures():
         ('<=', le, eq_to(2)),
         ('>', gt, eq_to(2)),
         ('>=', ge, eq_to(2)),
+        ('eqv?', lambda x, y: mkboolean(identical(x, y)), eq_to(2)),
         ('list', mklist, _any),
         ('list?', lambda v: mkboolean(islist(v)), eq_to(1)),
         ('null?', lambda v: mkboolean(isnil(v)), eq_to(1)),

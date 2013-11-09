@@ -37,7 +37,7 @@ def check_error(b, msg=None):
     if not b:
         if msg is None:
             import traceback
-            msg = '\n' + '\n'.join(traceback.format_stack())
+            msg = '\n' + ''.join(traceback.format_stack())
         raise InterpError(msg)
 
 
@@ -275,7 +275,7 @@ def analyze(exp):
         return analyze_cond(exp)
     elif is_lambda(exp):
         return analyze_lambda(exp)
-    elif islist(exp):  # otherwise
+    elif ispair(exp):  # otherwise
         return analyze_application(exp)
     else:
         raise_error('unknown exp type -- ANALYZE: %s' % exp)
@@ -428,7 +428,9 @@ def append(a, b):
 
 
 def cons(a, seq):
-    check_error(islist(seq))
+    check_error(
+        islist(seq),
+        'The second argument of cons must be a list. (Got: %s)' % seq)
     return list_cons(a, seq)
 
 

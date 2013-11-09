@@ -10,28 +10,37 @@ def raise_parse_error(msg):
 
 # lex #####################################################
 
+from simpletable import enum
+
 # ignore spaces and comma
 t_ignore = ' \t\r'
 
 LPAREN = 'LPAREN'
 RPAREN = 'RPAREN'
+LBRACK = 'LBRACK'
+RBRACK = 'RBRACK'
 NUMBER = 'NUMBER'
 STRING = 'STRING'
 QUOTE = 'QUOTE'
 SYMBOL = 'SYMBOL'
 
-tokens = (
-    LPAREN,
-    RPAREN,
-    NUMBER,
-    STRING,
-    QUOTE,
-    SYMBOL,
+TK = enum(
+    'LPAREN',
+    'RPAREN',
+    'LBRACK',
+    'RBRACK',
+    'NUMBER',
+    'STRING',
+    'QUOTE',
+    'SYMBOL'
 )
 
+tokens = TK.keys()
 
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
+t_LBRACK = r'\['
+t_RBRACK = r'\]'
 
 
 def t_comment(t):
@@ -134,10 +143,12 @@ def build_tree(tokens):
         i = start
         while i < num_tokens:
             t = tokens[i]
-            if t.type == LPAREN:
+            if t.type in (LPAREN, LBRACK):
                 child, i = parse_start(i + 1)
+                if t.type == LBRACK:
+                    child.insert(0, mk_symbol_token('list', t.lineno))
                 node.append(child)
-            elif t.type == RPAREN:
+            elif t.type in (RPAREN, RBRACK):
                 return node, i + 1
             else:
                 node.append(t)

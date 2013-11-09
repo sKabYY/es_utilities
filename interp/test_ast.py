@@ -11,6 +11,7 @@ text = '''
 'x
 ''x
 '('x)
+[]
 '''
 
 import tiparser

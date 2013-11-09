@@ -284,6 +284,10 @@ def eval_seq(exps, env):
     return analyze_seq(exps)(env)
 
 
+def _eval(exp, env):
+    return analyze(exp)(env)
+
+
 def _apply(proc, args):
     if isprimitive(proc):
         return apply_primitive(proc, args)

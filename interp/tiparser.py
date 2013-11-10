@@ -106,7 +106,7 @@ def lex_to_tokens(t):
     return Token(t.type, t.value, t.lineno)
 
 
-def scanne(text):
+def scan(text):
     lexer = new_lexer()
     lexer.input(text)
     buf = []
@@ -124,7 +124,7 @@ from tikeyword import KW
 
 
 def parse(text):
-    tokens = scanne(text)
+    tokens = scan(text)
     token_tree = build_tree(tokens)
     translated_tree = translate_quote(token_tree)
     return parse_tree(translated_tree)

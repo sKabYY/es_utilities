@@ -84,14 +84,15 @@ def debug_mode_off():
     return mkvoid()
 
 
+ES_DEFAULT_PORT = '9200'
 buildin_values.url = 'localhost'
-buildin_values.port = '9200'
+buildin_values.port = ES_DEFAULT_PORT
 buildin_values.index = '*'
 buildin_values.doc_type = mkvoid()
 
 
 @tiesproc
-def connect(url, port):
+def connect(url, port=ES_DEFAULT_PORT):
     r'''(connect url port): <url> and <port> are strings.'''
     buildin_values.url = url
     buildin_values.port = port
@@ -588,7 +589,7 @@ def ties_primitive_procedures():
         ('debug-on', debug_mode_on, eq_to(0)),
         ('debug-off', debug_mode_off, eq_to(0)),
         # environment
-        ('connect!', connect, eq_to(2)),
+        ('connect!', connect, inrange(1, 2)),
         ('set-current-index!', set_current_index, eq_to(1)),
         ('get-current-index', get_current_index, eq_to(0)),
         ('set-current-doc-type!', set_current_doc_type, eq_to(1)),

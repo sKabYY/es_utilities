@@ -22,6 +22,7 @@ from interp.titype import (
     mkvoid, isvoid,
     mkfalse, istrue,
     issymbol, symbol_tostring,
+    mklist,
     mkprimitive,
 )
 from common.container import Table
@@ -172,15 +173,28 @@ class ResponseList(list):
 # functions for elasticsearch #############################
 
 
+def es_connect():
+    es = ES.Elasticsearch([{
+        'host': buildin_values.url,
+        'post': buildin_values.port,
+    }])
+    return es
+
+
+@tiesproc
+def get_es_indices():
+    es = es_connect()
+    res = es.indices.get_aliases().keys()
+    res.sort()
+    return mklist(*res)
+
+
 @tiesproc
 def es_search(post_data):
     r'''(es_search post_data):
 <post_data> is a translated data.
 This function returns the origin response'''
-    es = ES.Elasticsearch([{
-        'host': buildin_values.url,
-        'post': buildin_values.port,
-    }])
+    es = es_connect()
     kwargs = {
         'index': buildin_values.index,
         'body': post_data,
@@ -587,6 +601,7 @@ def ties_primitive_procedures():
         ('Or', lambda *conds: Or(conds), ge_than(1)),
         ('Not', Not, eq_to(1)),
         # translate and search
+        ('get-es-indices', get_es_indices, eq_to(0)),
         ('Sort', Sort, inrange(1, 2)),
         ('origin-search', es_search, eq_to(1)),
         ('translate-hits', translate_hits, _any),

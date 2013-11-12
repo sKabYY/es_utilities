@@ -99,27 +99,27 @@ def connect(url, port):
 
 
 @tiesproc
-def set_index(index):
+def set_current_index(index):
     r'''(set-index! index): <index> is a string.'''
     buildin_values.index = index
     return mkvoid()
 
 
 @tiesproc
-def get_index():
+def get_current_index():
     r'''(get-index): Returns the index currently in use.'''
     return buildin_values.index
 
 
 @tiesproc
-def set_doc_type(doc_type):
+def set_current_doc_type(doc_type):
     r'''(set-doc-type! doc-type): <doc-type> is a string.'''
     buildin_values.doc_type = doc_type
     return mkvoid()
 
 
 @tiesproc
-def get_doc_type():
+def get_current_doc_type():
     r'''(get-doc-type): Returns the doc type currently in use.'''
     return buildin_values.doc_type
 
@@ -182,7 +182,7 @@ def es_connect():
 
 
 @tiesproc
-def get_es_indices():
+def list_indices():
     es = es_connect()
     res = es.indices.get_aliases().keys()
     res.sort()
@@ -589,10 +589,10 @@ def ties_primitive_procedures():
         ('debug-off', debug_mode_off, eq_to(0)),
         # environment
         ('connect!', connect, eq_to(2)),
-        ('set-index!', set_index, eq_to(1)),
-        ('get-index', get_index, eq_to(0)),
-        ('set-doc-type!', set_doc_type, eq_to(1)),
-        ('get-doc-type', get_doc_type, eq_to(0)),
+        ('set-current-index!', set_current_index, eq_to(1)),
+        ('get-current-index', get_current_index, eq_to(0)),
+        ('set-current-doc-type!', set_current_doc_type, eq_to(1)),
+        ('get-current-doc-type', get_current_doc_type, eq_to(0)),
         # conditions
         ('Equal', Equal, eq_to(2)),
         ('Range', Range, eq_to(3)),
@@ -601,7 +601,7 @@ def ties_primitive_procedures():
         ('Or', lambda *conds: Or(conds), ge_than(1)),
         ('Not', Not, eq_to(1)),
         # translate and search
-        ('get-es-indices', get_es_indices, eq_to(0)),
+        ('list-indices', list_indices, eq_to(0)),
         ('Sort', Sort, inrange(1, 2)),
         ('origin-search', es_search, eq_to(1)),
         ('translate-hits', translate_hits, _any),

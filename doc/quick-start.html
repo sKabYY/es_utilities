@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:x="http://www.texmacs.org/2002/extensions" xmlns:m="http://www.w3.org/1998/Math/MathML">
+  <head>
+    <title>A Quick Start of TiES</title>
+    <meta content="TeXmacs 1.0.7.16" name="generator"></meta>
+    <style type="text/css">
+      body { text-align: justify } h5 { display: inline; padding-right: 1em }
+      h6 { display: inline; padding-right: 1em } table { border-collapse:
+      collapse } td { padding: 0.2em; vertical-align: baseline } .subsup {
+      display: inline; vertical-align: -0.2em } .subsup td { padding: 0px;
+      text-align: left} .fraction { display: inline; vertical-align: -0.8em }
+      .fraction td { padding: 0px; text-align: center } .wide { position:
+      relative; margin-left: -0.4em } .accent { position: relative;
+      margin-left: -0.4em; top: -0.1em } .title-block { width: 100%;
+      text-align: center } .title-block p { margin: 0px } .compact-block p {
+      margin-top: 0px; margin-bottom: 0px } .left-tab { text-align: left }
+      .center-tab { text-align: center } .right-tab { float: right; position:
+      relative; top: -1em } 
+    </style>
+  </head>
+  <body>
+    <p>
+      <table class="title-block">
+        <tr>
+          <td><table class="title-block">
+            <tr>
+              <td><font size="+3"><b>A Quick Start of TiES</b></font></td>
+            </tr>
+          </table></td>
+        </tr>
+      </table>
+      <span style="margin-left: 0em"></span>
+    </p>
+    <h2>Table of contents</h2>
+    <div style="text-indent: 0em">
+      <div class="compact-block">
+        <p style="margin-top: 1em; margin-bottom: 0.5em">
+          <b>Balabala</b> <span style="margin-left: 5mm"></span> <a href="#auto-1">2</a>
+        </p>
+        <p style="margin-top: 1em; margin-bottom: 0.5em">
+          <b>Quick start</b> <span style="margin-left: 5mm"></span> <a href="#auto-2">2</a>
+        </p>
+        <div style="margin-left: 96px">
+          <p>
+            The parameters for this query <span style="margin-left: 5mm"></span> <a href="#auto-3">2</a>
+          </p>
+        </div>
+        <p style="margin-top: 1em; margin-bottom: 0.5em">
+          <b>Not so quick start</b> <span style="margin-left: 5mm"></span> <a href="#auto-4">2</a>
+        </p>
+      </div>
+    </div>
+    <h2 id="auto-1">Balabala</h2>
+    <p>
+      TiES is a...
+    </p>
+    <h2 id="auto-2">Quick start</h2>
+    <p>
+      Let's start from a simple example:
+    </p>
+    <p style="margin-top: 1em; margin-bottom: 1em">
+      <b>Example <class style="font-style: normal">1</class>. </b>I have a lot of logs for
+      Sendmail and I want to search the 10 most frequent deffered domains.
+    </p>
+    <p>
+      If I use the official RESTful API of Elasticsearch, I can type the
+      following command:
+    </p>
+    <table style="width: 100%">
+      <tbody><tr>
+        <td style="width: 100%; border-left: 1px solid; border-right: 1px solid; border-top: 1px solid; border-bottom: 1px solid; padding-left: 0.5em; padding-right: 0.5em" bgcolor=""><pre class="verbatim" xml:space="preserve">
+curl 'my.elasticsearch.host:9200/maillog*' -d '{
+    &quot;facets&quot;: {&quot;domain0&quot;: {&quot;terms&quot;: {&quot;field&quot;: &quot;@fields.toDomain&quot;,
+                                      &quot;order&quot;: &quot;count&quot;,
+                                      &quot;size&quot;: 10}}},
+    &quot;query&quot;: {&quot;term&quot;: {&quot;@fields.status&quot;: &quot;deffered&quot;}},
+    &quot;size&quot;: 0}'</pre></td>
+      </tr></tbody>
+    </table>
+    <p>
+      I think the query is not complicated. But I have to type a very long
+      (and multiple lines) command.
+    </p>
+    <p>
+      <b>The factors for this query</b>
+    </p>
+    <ol>
+      <li>
+        <p>
+          The field: the field is &ldquo;@fields.toDomain&rdquo;.
+        </p>
+      </li>
+      <li>
+        <p>
+          The size: 10.
+        </p>
+      </li>
+      <li>
+        <p>
+          Condition: The content of field &ldquo;@field.status&rdquo; is
+          &ldquo;deffered&rdquo;.
+        </p>
+      </li>
+    </ol>
+    <h2 id="auto-3">Not so quick start</h2>
+  </body>
+</html>
